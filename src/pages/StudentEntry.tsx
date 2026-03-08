@@ -34,6 +34,7 @@ export default function StudentEntry() {
   const [occupiedSeatIds, setOccupiedSeatIds] = useState<Set<string>>(new Set());
   const [selectedSeatId, setSelectedSeatId] = useState<string>('');
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     userType: '' as 'student' | 'teacher' | '',
@@ -97,23 +98,30 @@ export default function StudentEntry() {
 
   const clearSignature = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    if (canvas) {
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    setSignatureDataUrl(null);
   };
 
-  const isCanvasBlank = () => {
+  const getSignatureDataUrl = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return true;
+    if (!canvas) return null;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return true;
+    if (!ctx) return null;
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    return !pixels.some((ch, i) => i % 4 === 3 && ch !== 0);
+    const hasInk = pixels.some((ch, i) => i % 4 === 3 && ch !== 0);
+    if (!hasInk) return null;
+    return canvas.toDataURL('image/png');
   };
 
   const handleSubmit = async () => {
     if (!libraryId) return;
-    if (isCanvasBlank()) {
+
+    const signature = signatureDataUrl ?? getSignatureDataUrl();
+    if (!signature) {
       toast.error('Please provide your signature / कृपया हस्ताक्षर करें');
+      setStep(4);
       return;
     }
 
@@ -135,6 +143,7 @@ export default function StudentEntry() {
       id_card_number: form.idCard.trim() || null,
       device_info: navigator.userAgent,
       seat_id: selectedSeatId || null,
+      signature_path: signature,
     });
 
     // Auto-register in students/teachers table
@@ -477,7 +486,18 @@ export default function StudentEntry() {
                   <Button variant="outline" className="flex-1 h-11" onClick={() => setStep(3)}>
                     <ChevronLeft className="h-4 w-4 mr-1" /> Back
                   </Button>
-                  <Button className="flex-1 gradient-primary text-primary-foreground h-11" onClick={() => setStep(5)}>
+                  <Button
+                    className="flex-1 gradient-primary text-primary-foreground h-11"
+                    onClick={() => {
+                      const signature = getSignatureDataUrl();
+                      if (!signature) {
+                        toast.error('Please provide your signature / कृपया हस्ताक्षर करें');
+                        return;
+                      }
+                      setSignatureDataUrl(signature);
+                      setStep(5);
+                    }}
+                  >
                     Review / समीक्षा <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -506,6 +526,12 @@ export default function StudentEntry() {
                   <div className="flex justify-between"><span className="text-muted-foreground">Date:</span><span className="font-medium">{new Date().toLocaleDateString('en-IN')}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Time:</span><span className="font-medium">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
                   {selectedSeatId && <div className="flex justify-between"><span className="text-muted-foreground">Seat:</span><span className="font-medium">{seats.find(s => s.id === selectedSeatId)?.seat_number || '-'}</span></div>}
+                  {signatureDataUrl && (
+                    <div className="space-y-2 pt-2">
+                      <span className="text-muted-foreground">Signature:</span>
+                      <img src={signatureDataUrl} alt="Captured signature" className="h-20 w-full rounded-md border border-border bg-background object-contain" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
