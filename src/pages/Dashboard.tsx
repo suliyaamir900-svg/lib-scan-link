@@ -63,6 +63,10 @@ export default function Dashboard() {
   const studentsInside = todayEntries.filter(e => (e.user_type || 'student') === 'student' && !e.exit_time).length;
   const teachersInside = todayEntries.filter(e => e.user_type === 'teacher' && !e.exit_time).length;
   const overdueBooks = issues.filter(i => i.status === 'issued' && i.return_date < today).length;
+  const totalFines = issues.filter(i => i.status === 'issued' && i.return_date < today).reduce((sum, i) => {
+    const days = Math.floor((new Date(today).getTime() - new Date(i.return_date).getTime()) / 86400000);
+    return sum + days * (i.fine_per_day || 5);
+  }, 0);
   const occupiedSeats = new Set(todayEntries.filter(e => e.seat_id && !e.exit_time).map(e => e.seat_id)).size;
 
   const stats = [
