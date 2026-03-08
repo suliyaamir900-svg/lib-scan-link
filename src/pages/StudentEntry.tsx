@@ -486,7 +486,18 @@ export default function StudentEntry() {
                   <Button variant="outline" className="flex-1 h-11" onClick={() => setStep(3)}>
                     <ChevronLeft className="h-4 w-4 mr-1" /> Back
                   </Button>
-                  <Button className="flex-1 gradient-primary text-primary-foreground h-11" onClick={() => setStep(5)}>
+                  <Button
+                    className="flex-1 gradient-primary text-primary-foreground h-11"
+                    onClick={() => {
+                      const signature = getSignatureDataUrl();
+                      if (!signature) {
+                        toast.error('Please provide your signature / कृपया हस्ताक्षर करें');
+                        return;
+                      }
+                      setSignatureDataUrl(signature);
+                      setStep(5);
+                    }}
+                  >
                     Review / समीक्षा <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
