@@ -23,6 +23,10 @@ import StudentEntry from "./pages/StudentEntry";
 import SeatManagement from "./pages/SeatManagement";
 import SmartSearch from "./pages/SmartSearch";
 import Leaderboard from "./pages/Leaderboard";
+import Announcements from "./pages/Announcements";
+import Notifications from "./pages/Notifications";
+import FineTracker from "./pages/FineTracker";
+import VisitorLog from "./pages/VisitorLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
