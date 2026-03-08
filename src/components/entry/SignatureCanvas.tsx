@@ -24,6 +24,7 @@ export default function SignatureCanvas({ canvasRef, onClear }: Props) {
   };
 
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e) e.preventDefault();
     setDrawing(true);
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
@@ -34,12 +35,13 @@ export default function SignatureCanvas({ canvasRef, onClear }: Props) {
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!drawing) return;
+    if ('touches' in e) e.preventDefault();
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
     const { x, y } = getCoords(e);
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#1a1a2e';
+    ctx.strokeStyle = 'hsl(var(--foreground))';
     ctx.lineTo(x, y);
     ctx.stroke();
   };
