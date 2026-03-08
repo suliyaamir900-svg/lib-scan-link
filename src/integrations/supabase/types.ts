@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          library_id: string
+          message: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          library_id: string
+          message?: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          library_id?: string
+          message?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_categories: {
         Row: {
           created_at: string
@@ -50,6 +88,7 @@ export type Database = {
           borrower_department: string | null
           borrower_id: string
           borrower_name: string
+          borrower_phone: string | null
           borrower_type: string
           created_at: string
           fine_amount: number | null
@@ -68,6 +107,7 @@ export type Database = {
           borrower_department?: string | null
           borrower_id: string
           borrower_name: string
+          borrower_phone?: string | null
           borrower_type?: string
           created_at?: string
           fine_amount?: number | null
@@ -86,6 +126,7 @@ export type Database = {
           borrower_department?: string | null
           borrower_id?: string
           borrower_name?: string
+          borrower_phone?: string | null
           borrower_type?: string
           created_at?: string
           fine_amount?: number | null
@@ -512,6 +553,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      visitor_logs: {
+        Row: {
+          created_at: string
+          entry_time: string
+          exit_time: string | null
+          id: string
+          library_id: string
+          name: string
+          phone: string
+          purpose: string
+        }
+        Insert: {
+          created_at?: string
+          entry_time?: string
+          exit_time?: string | null
+          id?: string
+          library_id: string
+          name: string
+          phone?: string
+          purpose?: string
+        }
+        Update: {
+          created_at?: string
+          entry_time?: string
+          exit_time?: string | null
+          id?: string
+          library_id?: string
+          name?: string
+          phone?: string
+          purpose?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_logs_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
