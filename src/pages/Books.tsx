@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Plus, Edit, Trash2, Loader2, BookOpen, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2, BookOpen, MapPin, ChevronLeft, ChevronRight, Package, Tag, Copy, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 15;
@@ -36,6 +37,8 @@ export default function Books() {
   const [saving, setSaving] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
+  const [viewBook, setViewBook] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -44,7 +47,7 @@ export default function Books() {
       setLibrary(lib);
       if (lib) {
         const [booksRes, catsRes] = await Promise.all([
-          (supabase as any).from('books').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
+          (supabase as any).from('books').select('*').eq('library_id', lib.id).order('title', { ascending: true }),
           (supabase as any).from('book_categories').select('*').eq('library_id', lib.id).order('name'),
         ]);
         setBooks(booksRes.data || []);
@@ -60,7 +63,7 @@ export default function Books() {
 
   const filtered = books.filter(b => {
     const q = search.toLowerCase();
-    const matchesSearch = !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || (b.isbn || '').toLowerCase().includes(q);
+    const matchesSearch = !q || b.title.toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q) || (b.isbn || '').toLowerCase().includes(q);
     const matchesCat = catFilter === 'all' || b.category_name === catFilter;
     return matchesSearch && matchesCat;
   });
@@ -78,49 +81,87 @@ export default function Books() {
   const openEdit = (book: any) => {
     setEditBook(book);
     setForm({
-      title: book.title, author: book.author, publisher: book.publisher || '',
+      title: book.title || '', author: book.author || '', publisher: book.publisher || '',
       edition: book.edition || '', isbn: book.isbn || '', category_name: book.category_name || '',
-      total_copies: book.total_copies, available_copies: book.available_copies,
+      total_copies: book.total_copies || 1, available_copies: book.available_copies ?? 1,
       rack_number: book.rack_number || '', row_number: book.row_number || '', shelf_number: book.shelf_number || '',
     });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.title.trim()) { toast.error('Book title is required'); return; }
-    if (!library) return;
+    if (!form.title.trim()) { toast.error('Book title is required / किताब का शीर्षक ज़रूरी है'); return; }
+    if (!library) { toast.error('Library not found'); return; }
     setSaving(true);
 
-    if (editBook) {
-      const { error } = await (supabase as any).from('books').update({
-        ...form, updated_at: new Date().toISOString(),
-      }).eq('id', editBook.id);
-      if (error) { toast.error('Failed to update'); console.error(error); }
-      else {
-        setBooks(prev => prev.map(b => b.id === editBook.id ? { ...b, ...form } : b));
-        toast.success('Book updated / किताब अपडेट हुई');
+    try {
+      if (editBook) {
+        const { error } = await (supabase as any).from('books').update({
+          title: form.title.trim(),
+          author: form.author.trim(),
+          publisher: form.publisher.trim(),
+          edition: form.edition.trim(),
+          isbn: form.isbn.trim(),
+          category_name: form.category_name || '',
+          total_copies: form.total_copies,
+          available_copies: form.available_copies,
+          rack_number: form.rack_number.trim(),
+          row_number: form.row_number.trim(),
+          shelf_number: form.shelf_number.trim(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', editBook.id);
+
+        if (error) {
+          console.error('Update error:', error);
+          toast.error(`Update failed: ${error.message}`);
+        } else {
+          setBooks(prev => prev.map(b => b.id === editBook.id ? { ...b, ...form, title: form.title.trim(), author: form.author.trim() } : b));
+          toast.success('✅ Book updated / किताब अपडेट हुई');
+          setDialogOpen(false);
+        }
+      } else {
+        const insertData = {
+          library_id: library.id,
+          title: form.title.trim(),
+          author: form.author.trim(),
+          publisher: form.publisher.trim(),
+          edition: form.edition.trim(),
+          isbn: form.isbn.trim(),
+          category_name: form.category_name || '',
+          total_copies: form.total_copies,
+          available_copies: form.available_copies,
+          rack_number: form.rack_number.trim(),
+          row_number: form.row_number.trim(),
+          shelf_number: form.shelf_number.trim(),
+        };
+
+        const { data, error } = await (supabase as any).from('books').insert(insertData).select().single();
+
+        if (error) {
+          console.error('Insert error:', error);
+          toast.error(`Add failed: ${error.message}`);
+        } else {
+          setBooks(prev => [data, ...prev]);
+          toast.success('✅ Book added successfully / किताब जोड़ी गई');
+          setDialogOpen(false);
+          // Reset form for next add
+          setForm({ ...emptyBook });
+        }
       }
-    } else {
-      const { data, error } = await (supabase as any).from('books').insert({
-        library_id: library.id, ...form,
-      }).select().single();
-      if (error) { toast.error('Failed to add'); console.error(error); }
-      else {
-        setBooks(prev => [data, ...prev]);
-        toast.success('Book added / किताब जोड़ी गई');
-      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast.error('Something went wrong');
     }
     setSaving(false);
-    setDialogOpen(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this book?')) return;
+    if (!confirm('Delete this book? / यह किताब हटाएं?')) return;
     const { error } = await (supabase as any).from('books').delete().eq('id', id);
-    if (error) toast.error('Failed');
+    if (error) { toast.error(`Delete failed: ${error.message}`); console.error(error); }
     else {
       setBooks(prev => prev.filter(b => b.id !== id));
-      toast.success('Deleted');
+      toast.success('Book deleted / किताब हटाई गई');
     }
   };
 
@@ -129,28 +170,65 @@ export default function Books() {
     const { data, error } = await (supabase as any).from('book_categories').insert({
       library_id: library.id, name: newCatName.trim(),
     }).select().single();
-    if (error) toast.error('Failed to add category');
-    else {
-      setCategories(prev => [...prev, data]);
-      toast.success('Category added');
+    if (error) {
+      console.error(error);
+      toast.error(error.message.includes('duplicate') ? 'Category already exists' : `Failed: ${error.message}`);
+    } else {
+      setCategories(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      toast.success('✅ Category added / श्रेणी जोड़ी गई');
       setNewCatName('');
-      setCatDialogOpen(false);
     }
   };
 
+  const handleDeleteCategory = async (id: string) => {
+    const { error } = await (supabase as any).from('book_categories').delete().eq('id', id);
+    if (error) toast.error('Failed to delete category');
+    else {
+      setCategories(prev => prev.filter(c => c.id !== id));
+      toast.success('Category deleted');
+    }
+  };
+
+  const totalCopies = books.reduce((s, b) => s + (b.total_copies || 0), 0);
+  const availableCopies = books.reduce((s, b) => s + (b.available_copies || 0), 0);
+
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <BookOpen className="h-6 w-6 text-primary" />
           Books / किताबें
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCatDialogOpen(true)}>+ Category</Button>
-          <Button size="sm" onClick={openAdd} className="gradient-primary text-primary-foreground gap-1">
-            <Plus className="h-4 w-4" /> Add Book
+          <Button variant="outline" size="sm" onClick={() => setCatDialogOpen(true)} className="gap-1">
+            <Tag className="h-3.5 w-3.5" /> Categories
+          </Button>
+          <Button size="sm" onClick={openAdd} className="gradient-primary text-primary-foreground gap-1 shadow-primary">
+            <Plus className="h-4 w-4" /> Add Book / किताब जोड़ें
           </Button>
         </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {[
+          { label: 'Total Books / कुल किताबें', value: books.length, icon: BookOpen, gradient: 'gradient-primary' },
+          { label: 'Total Copies / कुल प्रतियां', value: totalCopies, icon: Copy, gradient: 'gradient-accent' },
+          { label: 'Available / उपलब्ध', value: availableCopies, icon: CheckCircle, gradient: 'gradient-success' },
+          { label: 'Categories / श्रेणियां', value: categories.length, icon: Tag, gradient: 'gradient-warm' },
+        ].map((s, i) => (
+          <Card key={i} className="shadow-card border-border/50 overflow-hidden">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`h-10 w-10 rounded-lg ${s.gradient} flex items-center justify-center shrink-0`}>
+                <s.icon className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-xl font-bold">{s.value}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Filters */}
@@ -159,44 +237,38 @@ export default function Books() {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title, author, ISBN" className="pl-10" />
+              <Input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search title, author, ISBN / शीर्षक, लेखक, ISBN खोजें" className="pl-10" />
             </div>
-            <Select value={catFilter} onValueChange={setCatFilter}>
+            <Select value={catFilter} onValueChange={v => { setCatFilter(v); setPage(0); }}>
               <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">All Categories / सभी</SelectItem>
                 {uniqueCats.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground self-center">{filtered.length} books</p>
+            <p className="text-sm text-muted-foreground self-center whitespace-nowrap">{filtered.length} books</p>
           </div>
         </CardContent>
       </Card>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        {[
-          { label: 'Total Books', value: books.length },
-          { label: 'Total Copies', value: books.reduce((s, b) => s + b.total_copies, 0) },
-          { label: 'Available', value: books.reduce((s, b) => s + b.available_copies, 0) },
-          { label: 'Categories', value: uniqueCats.length },
-        ].map((s, i) => (
-          <Card key={i} className="shadow-card">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{s.value}</p>
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       {/* Table */}
       <Card className="shadow-card">
         {loading ? (
           <CardContent className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></CardContent>
         ) : filtered.length === 0 ? (
-          <CardContent className="p-10 text-center text-muted-foreground">
-            No books found. Click "Add Book" to start. / कोई किताब नहीं मिली।
+          <CardContent className="p-12 text-center">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold mb-1">{books.length === 0 ? 'No books yet / अभी कोई किताब नहीं' : 'No matching books / कोई मिलान नहीं'}</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {books.length === 0 ? 'Click "Add Book" to add your first book / "किताब जोड़ें" पर क्लिक करें' : 'Try a different search / अलग खोज करें'}
+            </p>
+            {books.length === 0 && (
+              <Button onClick={openAdd} className="gradient-primary text-primary-foreground gap-1">
+                <Plus className="h-4 w-4" /> Add First Book
+              </Button>
+            )}
           </CardContent>
         ) : (
           <>
@@ -207,42 +279,45 @@ export default function Books() {
                     <TableHead>Title / शीर्षक</TableHead>
                     <TableHead>Author / लेखक</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>ISBN</TableHead>
                     <TableHead className="text-center">Copies</TableHead>
                     <TableHead className="text-center">Available</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead className="w-20"></TableHead>
+                    <TableHead className="w-24 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageBooks.map(book => (
-                    <TableRow key={book.id}>
-                      <TableCell className="font-medium">{book.title}</TableCell>
-                      <TableCell>{book.author}</TableCell>
+                    <TableRow key={book.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setViewBook(book)}>
                       <TableCell>
-                        {book.category_name && (
-                          <span className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">{book.category_name}</span>
-                        )}
+                        <div>
+                          <p className="font-medium">{book.title}</p>
+                          {book.isbn && <p className="text-xs text-muted-foreground">ISBN: {book.isbn}</p>}
+                        </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{book.isbn || '-'}</TableCell>
-                      <TableCell className="text-center">{book.total_copies}</TableCell>
+                      <TableCell className="text-sm">{book.author || '-'}</TableCell>
+                      <TableCell>
+                        {book.category_name ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">{book.category_name}</span>
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
+                      <TableCell className="text-center font-medium">{book.total_copies}</TableCell>
                       <TableCell className="text-center">
-                        <span className={`font-bold ${book.available_copies > 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        <span className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-sm font-bold ${book.available_copies > 0 ? 'bg-green-100 text-green-700' : 'bg-destructive/10 text-destructive'}`}>
                           {book.available_copies}
                         </span>
                       </TableCell>
                       <TableCell>
                         {(book.rack_number || book.row_number || book.shelf_number) ? (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {[book.rack_number && `Rack ${book.rack_number}`, book.row_number && `Row ${book.row_number}`, book.shelf_number && `Shelf ${book.shelf_number}`].filter(Boolean).join(', ')}
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            {[book.rack_number && `R${book.rack_number}`, book.row_number && `Row ${book.row_number}`, book.shelf_number && `S${book.shelf_number}`].filter(Boolean).join(' · ')}
                           </span>
-                        ) : '-'}
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(book)}><Edit className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(book.id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                        <div className="flex gap-1 justify-end">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(book)} title="Edit"><Edit className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(book.id)} className="text-destructive hover:text-destructive" title="Delete"><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -263,16 +338,62 @@ export default function Books() {
         )}
       </Card>
 
+      {/* View Book Detail Dialog */}
+      <Dialog open={!!viewBook} onOpenChange={() => setViewBook(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg">{viewBook?.title}</DialogTitle>
+            <DialogDescription>{viewBook?.author && `by ${viewBook.author}`}</DialogDescription>
+          </DialogHeader>
+          {viewBook && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {[
+                  ['Publisher', viewBook.publisher],
+                  ['Edition', viewBook.edition],
+                  ['ISBN', viewBook.isbn],
+                  ['Category', viewBook.category_name],
+                  ['Total Copies', viewBook.total_copies],
+                  ['Available', viewBook.available_copies],
+                ].filter(([, v]) => v).map(([label, value], i) => (
+                  <div key={i} className="p-2 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="font-medium">{value}</p>
+                  </div>
+                ))}
+              </div>
+              {(viewBook.rack_number || viewBook.row_number || viewBook.shelf_number) && (
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    {[viewBook.rack_number && `Rack ${viewBook.rack_number}`, viewBook.row_number && `Row ${viewBook.row_number}`, viewBook.shelf_number && `Shelf ${viewBook.shelf_number}`].filter(Boolean).join(' · ')}
+                  </span>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button className="flex-1" variant="outline" onClick={() => { setViewBook(null); openEdit(viewBook); }}>
+                  <Edit className="h-4 w-4 mr-1" /> Edit
+                </Button>
+                <Button className="flex-1 gradient-primary text-primary-foreground" onClick={() => setViewBook(null)}>Close</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Add/Edit Book Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editBook ? 'Edit Book / किताब संपादित करें' : 'Add Book / किताब जोड़ें'}</DialogTitle>
+            <DialogTitle>{editBook ? '✏️ Edit Book / किताब संपादित करें' : '📚 Add New Book / नई किताब जोड़ें'}</DialogTitle>
+            <DialogDescription>
+              {editBook ? 'Update the book details below' : 'Fill in the details to add a new book to your library'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Book Title / शीर्षक *</Label>
-              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Data Structures" />
+              <Label className="font-semibold">Book Title / शीर्षक <span className="text-destructive">*</span></Label>
+              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Data Structures & Algorithms" className="h-11" autoFocus />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -281,13 +402,13 @@ export default function Books() {
               </div>
               <div className="space-y-2">
                 <Label>Publisher / प्रकाशक</Label>
-                <Input value={form.publisher} onChange={e => setForm(p => ({ ...p, publisher: e.target.value }))} placeholder="Publisher" />
+                <Input value={form.publisher} onChange={e => setForm(p => ({ ...p, publisher: e.target.value }))} placeholder="Publisher name" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Edition / संस्करण</Label>
-                <Input value={form.edition} onChange={e => setForm(p => ({ ...p, edition: e.target.value }))} placeholder="e.g. 5th" />
+                <Input value={form.edition} onChange={e => setForm(p => ({ ...p, edition: e.target.value }))} placeholder="e.g. 5th Edition" />
               </div>
               <div className="space-y-2">
                 <Label>ISBN</Label>
@@ -295,69 +416,92 @@ export default function Books() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Category / श्रेणी</Label>
-              <Select value={form.category_name} onValueChange={v => setForm(p => ({ ...p, category_name: v }))}>
+              <div className="flex items-center justify-between">
+                <Label>Category / श्रेणी</Label>
+                <Button type="button" variant="ghost" size="sm" className="text-xs h-6" onClick={() => setCatDialogOpen(true)}>
+                  + New Category
+                </Button>
+              </div>
+              <Select value={form.category_name || '__none'} onValueChange={v => setForm(p => ({ ...p, category_name: v === '__none' ? '' : v }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none">No Category / कोई श्रेणी नहीं</SelectItem>
                   {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                  <SelectItem value="">None</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Total Copies / कुल प्रतियां</Label>
-                <Input type="number" min={1} value={form.total_copies} onChange={e => setForm(p => ({ ...p, total_copies: parseInt(e.target.value) || 1 }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Available / उपलब्ध</Label>
-                <Input type="number" min={0} value={form.available_copies} onChange={e => setForm(p => ({ ...p, available_copies: parseInt(e.target.value) || 0 }))} />
+
+            <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2"><Package className="h-4 w-4" /> Inventory / इन्वेंटरी</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Total Copies / कुल प्रतियां</Label>
+                  <Input type="number" min={1} value={form.total_copies} onChange={e => {
+                    const val = parseInt(e.target.value) || 1;
+                    setForm(p => ({ ...p, total_copies: val, available_copies: editBook ? p.available_copies : val }));
+                  }} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Available / उपलब्ध</Label>
+                  <Input type="number" min={0} max={form.total_copies} value={form.available_copies} onChange={e => setForm(p => ({ ...p, available_copies: Math.min(parseInt(e.target.value) || 0, p.total_copies) }))} />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label>Rack No.</Label>
-                <Input value={form.rack_number} onChange={e => setForm(p => ({ ...p, rack_number: e.target.value }))} placeholder="A" />
-              </div>
-              <div className="space-y-2">
-                <Label>Row No.</Label>
-                <Input value={form.row_number} onChange={e => setForm(p => ({ ...p, row_number: e.target.value }))} placeholder="3" />
-              </div>
-              <div className="space-y-2">
-                <Label>Shelf No.</Label>
-                <Input value={form.shelf_number} onChange={e => setForm(p => ({ ...p, shelf_number: e.target.value }))} placeholder="2" />
+
+            <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2"><MapPin className="h-4 w-4" /> Location / स्थान</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label>Rack No.</Label>
+                  <Input value={form.rack_number} onChange={e => setForm(p => ({ ...p, rack_number: e.target.value }))} placeholder="A" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Row No.</Label>
+                  <Input value={form.row_number} onChange={e => setForm(p => ({ ...p, row_number: e.target.value }))} placeholder="3" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Shelf No.</Label>
+                  <Input value={form.shelf_number} onChange={e => setForm(p => ({ ...p, shelf_number: e.target.value }))} placeholder="2" />
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving} className="gradient-primary text-primary-foreground">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editBook ? 'Update' : 'Add Book'}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel / रद्द</Button>
+            <Button onClick={handleSave} disabled={saving} className="gradient-primary text-primary-foreground shadow-primary min-w-[120px]">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editBook ? '✅ Update Book' : '✅ Add Book'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Category Dialog */}
+      {/* Category Management Dialog */}
       <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add Category / श्रेणी जोड़ें</DialogTitle>
+            <DialogTitle>📂 Categories / श्रेणियां</DialogTitle>
+            <DialogDescription>Manage your book categories</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="e.g. Anatomy, Physiology, Computer Science" onKeyDown={e => e.key === 'Enter' && handleAddCategory()} />
-            {categories.length > 0 && (
-              <div className="flex flex-wrap gap-1">
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="New category name / नई श्रेणी" className="h-10" onKeyDown={e => e.key === 'Enter' && handleAddCategory()} />
+              <Button onClick={handleAddCategory} disabled={!newCatName.trim()} className="gradient-primary text-primary-foreground h-10 px-4">Add</Button>
+            </div>
+            {categories.length > 0 ? (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
                 {categories.map(c => (
-                  <span key={c.id} className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary">{c.name}</span>
+                  <div key={c.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 group">
+                    <span className="text-sm font-medium">{c.name}</span>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive" onClick={() => handleDeleteCategory(c.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 ))}
               </div>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground py-4">No categories yet / अभी कोई श्रेणी नहीं</p>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCatDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddCategory} className="gradient-primary text-primary-foreground">Add</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
