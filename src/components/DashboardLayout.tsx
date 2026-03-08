@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -18,6 +18,8 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/students', icon: Users, label: t('nav.students') },
     { to: '/teachers', icon: Briefcase, label: 'Teachers / शिक्षक' },
+    { to: '/books', icon: Library, label: 'Books / किताबें' },
+    { to: '/book-issues', icon: BookCopy, label: 'Issue/Return' },
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
