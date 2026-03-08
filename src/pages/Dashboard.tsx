@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [entries, setEntries] = useState<any[]>([]);
   const [issues, setIssues] = useState<any[]>([]);
   const [seats, setSeats] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
