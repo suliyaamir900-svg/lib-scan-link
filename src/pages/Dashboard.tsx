@@ -4,9 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase, DoorOpen } from 'lucide-react';
+import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase, DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['hsl(250, 80%, 60%)', 'hsl(200, 90%, 55%)', 'hsl(320, 75%, 55%)', 'hsl(30, 90%, 55%)', 'hsl(160, 70%, 45%)', 'hsl(0, 84%, 60%)'];
 
@@ -15,6 +15,8 @@ export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const [library, setLibrary] = useState<any>(null);
   const [entries, setEntries] = useState<any[]>([]);
+  const [issues, setIssues] = useState<any[]>([]);
+  const [seats, setSeats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,8 +25,14 @@ export default function Dashboard() {
       const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
       setLibrary(lib);
       if (lib) {
-        const { data: ent } = await supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false });
-        setEntries(ent || []);
+        const [entRes, issRes, seatRes] = await Promise.all([
+          supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
+          supabase.from('book_issues').select('*').eq('library_id', lib.id),
+          supabase.from('library_seats').select('*').eq('library_id', lib.id),
+        ]);
+        setEntries(entRes.data || []);
+        setIssues(issRes.data || []);
+        setSeats(seatRes.data || []);
       }
       setLoading(false);
     };
@@ -50,6 +58,8 @@ export default function Dashboard() {
   const todayEntries = entries.filter(e => e.entry_date === today);
   const studentsInside = todayEntries.filter(e => (e.user_type || 'student') === 'student' && !e.exit_time).length;
   const teachersInside = todayEntries.filter(e => e.user_type === 'teacher' && !e.exit_time).length;
+  const overdueBooks = issues.filter(i => i.status === 'issued' && i.return_date < today).length;
+  const occupiedSeats = new Set(todayEntries.filter(e => e.seat_id && !e.exit_time).map(e => e.seat_id)).size;
 
   const stats = [
     { label: t('dashboard.total_students'), value: entries.length.toString(), icon: Users, gradient: 'gradient-primary' },
@@ -58,7 +68,6 @@ export default function Dashboard() {
     { label: 'Monthly / मासिक', value: entries.filter(e => e.entry_date >= monthAgo).length.toString(), icon: CalendarClock, gradient: 'gradient-success' },
   ];
 
-  // Live occupancy
   const occupancy = [
     { label: 'Students Inside / छात्र अंदर', value: studentsInside, icon: GraduationCap, color: 'text-primary' },
     { label: 'Teachers Inside / शिक्षक अंदर', value: teachersInside, icon: Briefcase, color: 'text-accent' },
@@ -91,6 +100,20 @@ export default function Dashboard() {
     };
   });
 
+  // Most borrowed books
+  const bookBorrowCount: Record<string, number> = {};
+  issues.forEach(i => { bookBorrowCount[i.book_id] = (bookBorrowCount[i.book_id] || 0) + 1; });
+  const topBorrowedCount = Object.values(bookBorrowCount).sort((a, b) => b - a).slice(0, 5);
+
+  // Most frequent visitors
+  const visitorMap: Record<string, { name: string; count: number }> = {};
+  entries.forEach(e => {
+    const key = e.roll_number;
+    if (!visitorMap[key]) visitorMap[key] = { name: e.student_name, count: 0 };
+    visitorMap[key].count++;
+  });
+  const topVisitors = Object.values(visitorMap).sort((a, b) => b.count - a.count).slice(0, 5);
+
   const recentEntries = entries.slice(0, 8);
 
   return (
@@ -121,34 +144,82 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Live Occupancy */}
-          <Card className="shadow-card mb-6 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DoorOpen className="h-5 w-5 text-primary" />
-                Live Library Occupancy / लाइव लाइब्रेरी उपस्थिति
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {occupancy.map((o, i) => (
-                  <div key={i} className="text-center p-4 rounded-xl bg-muted/50">
-                    <o.icon className={`h-8 w-8 mx-auto mb-2 ${o.color}`} />
-                    <p className="text-3xl font-bold">{o.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{o.label}</p>
+          {/* Alerts Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {/* Live Occupancy */}
+            <Card className="shadow-card border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <DoorOpen className="h-4 w-4 text-primary" /> Live Occupancy
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-2">
+                  {occupancy.map((o, i) => (
+                    <div key={i} className="text-center p-2 rounded-lg bg-muted/50">
+                      <o.icon className={`h-5 w-5 mx-auto mb-1 ${o.color}`} />
+                      <p className="text-xl font-bold">{o.value}</p>
+                      <p className="text-[10px] text-muted-foreground">{o.label.split('/')[0].trim()}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Seat Status */}
+            <Card className="shadow-card border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Armchair className="h-4 w-4 text-primary" /> Seat Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-primary">{occupiedSeats}</p>
+                    <p className="text-[10px] text-muted-foreground">Occupied</p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-green-600">{Math.max(0, seats.length - occupiedSeats)}</p>
+                    <p className="text-[10px] text-muted-foreground">Free</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Book Alerts */}
+            <Card className={`shadow-card ${overdueBooks > 0 ? 'border-destructive/30' : 'border-primary/20'}`}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" /> Book Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-primary">{issues.filter(i => i.status === 'issued').length}</p>
+                    <p className="text-[10px] text-muted-foreground">Issued</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className={`text-2xl font-bold ${overdueBooks > 0 ? 'text-destructive' : 'text-green-600'}`}>{overdueBooks}</p>
+                    <p className="text-[10px] text-muted-foreground">Overdue</p>
+                  </div>
+                </div>
+                {overdueBooks > 0 && (
+                  <div className="mt-2 p-2 rounded bg-destructive/5 text-xs text-destructive flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> {overdueBooks} overdue books!
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <Card className="shadow-card lg:col-span-2">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Last 7 Days / पिछले 7 दिन
+                  <TrendingUp className="h-5 w-5 text-primary" /> Last 7 Days
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -186,8 +257,8 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Department Pie */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Department */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="text-lg">Department / विभाग</CardTitle>
@@ -198,12 +269,36 @@ export default function Dashboard() {
                 ) : (
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={deptData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} fontSize={11}>
-                        {deptData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      <Pie data={deptData.slice(0, 6)} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} fontSize={11}>
+                        {deptData.slice(0, 6).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Visitors */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><Trophy className="h-5 w-5 text-yellow-500" /> Top Visitors</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {topVisitors.length === 0 ? (
+                  <p className="text-center text-muted-foreground text-sm py-10">No data yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {topVisitors.map((v, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold w-5 text-center ${i === 0 ? 'text-yellow-500' : 'text-muted-foreground'}`}>{i + 1}</span>
+                          <span className="text-sm font-medium truncate">{v.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-primary">{v.count}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -217,24 +312,21 @@ export default function Dashboard() {
                 {recentEntries.length === 0 ? (
                   <p className="text-center text-muted-foreground text-sm py-10">No entries yet</p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {recentEntries.map((entry) => (
-                      <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${entry.user_type === 'teacher' ? 'bg-accent/10' : 'bg-primary/10'}`}>
+                      <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center ${entry.user_type === 'teacher' ? 'bg-accent/10' : 'bg-primary/10'}`}>
                             {entry.user_type === 'teacher'
-                              ? <Briefcase className="h-4 w-4 text-accent" />
-                              : <GraduationCap className="h-4 w-4 text-primary" />}
+                              ? <Briefcase className="h-3 w-3 text-accent" />
+                              : <GraduationCap className="h-3 w-3 text-primary" />}
                           </div>
                           <div>
-                            <p className="font-medium text-sm">{entry.student_name}</p>
-                            <p className="text-xs text-muted-foreground">{entry.department} • {entry.user_type === 'teacher' ? entry.employee_id : `${entry.year} • ${entry.roll_number}`}</p>
+                            <p className="font-medium text-xs">{entry.student_name}</p>
+                            <p className="text-[10px] text-muted-foreground">{entry.department}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">{entry.entry_date}</p>
-                          <p className="text-xs text-muted-foreground">{entry.entry_time?.slice(0, 5)}</p>
-                        </div>
+                        <p className="text-[10px] text-muted-foreground">{entry.entry_time?.slice(0, 5)}</p>
                       </div>
                     ))}
                   </div>
