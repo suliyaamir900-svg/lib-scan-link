@@ -219,6 +219,7 @@ export type Database = {
           available_copies: number
           category_id: string | null
           category_name: string | null
+          condition: string | null
           created_at: string
           edition: string | null
           id: string
@@ -242,6 +243,7 @@ export type Database = {
           available_copies?: number
           category_id?: string | null
           category_name?: string | null
+          condition?: string | null
           created_at?: string
           edition?: string | null
           id?: string
@@ -265,6 +267,7 @@ export type Database = {
           available_copies?: number
           category_id?: string | null
           category_name?: string | null
+          condition?: string | null
           created_at?: string
           edition?: string | null
           id?: string
@@ -293,6 +296,95 @@ export type Database = {
           },
           {
             foreignKeyName: "books_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_resources: {
+        Row: {
+          author: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          download_count: number | null
+          file_url: string | null
+          id: string
+          library_id: string
+          title: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          download_count?: number | null
+          file_url?: string | null
+          id?: string
+          library_id: string
+          title: string
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          download_count?: number | null
+          file_url?: string | null
+          id?: string
+          library_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_resources_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_registrations: {
+        Row: {
+          created_at: string
+          department: string | null
+          event_id: string
+          id: string
+          library_id: string
+          student_id: string
+          student_name: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          event_id: string
+          id?: string
+          library_id: string
+          student_id: string
+          student_name: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          event_id?: string
+          id?: string
+          library_id?: string
+          student_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "library_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_library_id_fkey"
             columns: ["library_id"]
             isOneToOne: false
             referencedRelation: "libraries"
@@ -338,6 +430,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      library_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string | null
+          event_date: string
+          id: string
+          is_active: boolean | null
+          library_id: string
+          location: string | null
+          max_participants: number | null
+          registered_count: number | null
+          start_time: string
+          title: string
+          type: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          event_date: string
+          id?: string
+          is_active?: boolean | null
+          library_id: string
+          location?: string | null
+          max_participants?: number | null
+          registered_count?: number | null
+          start_time: string
+          title: string
+          type?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          event_date?: string
+          id?: string
+          is_active?: boolean | null
+          library_id?: string
+          location?: string | null
+          max_participants?: number | null
+          registered_count?: number | null
+          start_time?: string
+          title?: string
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_events_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       library_seats: {
         Row: {
@@ -459,6 +607,104 @@ export type Database = {
           },
         ]
       }
+      room_bookings: {
+        Row: {
+          booked_by_id: string
+          booked_by_name: string
+          booking_date: string
+          created_at: string
+          end_time: string
+          id: string
+          library_id: string
+          purpose: string | null
+          room_id: string
+          start_time: string
+          status: string
+        }
+        Insert: {
+          booked_by_id: string
+          booked_by_name: string
+          booking_date: string
+          created_at?: string
+          end_time: string
+          id?: string
+          library_id: string
+          purpose?: string | null
+          room_id: string
+          start_time: string
+          status?: string
+        }
+        Update: {
+          booked_by_id?: string
+          booked_by_name?: string
+          booking_date?: string
+          created_at?: string
+          end_time?: string
+          id?: string
+          library_id?: string
+          purpose?: string | null
+          room_id?: string
+          start_time?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_bookings_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seat_queue: {
+        Row: {
+          created_at: string
+          id: string
+          library_id: string
+          phone: string | null
+          queue_position: number
+          status: string
+          student_id: string
+          student_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          library_id: string
+          phone?: string | null
+          queue_position?: number
+          status?: string
+          student_id: string
+          student_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          library_id?: string
+          phone?: string | null
+          queue_position?: number
+          status?: string
+          student_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_queue_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_entries: {
         Row: {
           created_at: string
@@ -479,6 +725,7 @@ export type Database = {
           seat_id: string | null
           signature_path: string | null
           student_name: string
+          study_minutes: number | null
           user_type: string | null
           year: string
         }
@@ -501,6 +748,7 @@ export type Database = {
           seat_id?: string | null
           signature_path?: string | null
           student_name: string
+          study_minutes?: number | null
           user_type?: string | null
           year: string
         }
@@ -523,12 +771,104 @@ export type Database = {
           seat_id?: string | null
           signature_path?: string | null
           student_name?: string
+          study_minutes?: number | null
           user_type?: string | null
           year?: string
         }
         Relationships: [
           {
             foreignKeyName: "student_entries_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_points: {
+        Row: {
+          badges: string[] | null
+          books_borrowed: number
+          created_at: string
+          department: string
+          id: string
+          library_id: string
+          library_visits: number
+          on_time_returns: number
+          student_id: string
+          student_name: string
+          total_points: number
+          total_study_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          badges?: string[] | null
+          books_borrowed?: number
+          created_at?: string
+          department?: string
+          id?: string
+          library_id: string
+          library_visits?: number
+          on_time_returns?: number
+          student_id: string
+          student_name?: string
+          total_points?: number
+          total_study_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          badges?: string[] | null
+          books_borrowed?: number
+          created_at?: string
+          department?: string
+          id?: string
+          library_id?: string
+          library_visits?: number
+          on_time_returns?: number
+          student_id?: string
+          student_name?: string
+          total_points?: number
+          total_study_minutes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_points_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_rooms: {
+        Row: {
+          capacity: number
+          created_at: string
+          id: string
+          is_active: boolean
+          library_id: string
+          name: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          library_id: string
+          name: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          library_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_rooms_library_id_fkey"
             columns: ["library_id"]
             isOneToOne: false
             referencedRelation: "libraries"
