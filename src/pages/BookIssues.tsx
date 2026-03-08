@@ -134,7 +134,7 @@ export default function BookIssues() {
         const { data } = await supabase.from('student_entries').select('*').eq('library_id', library.id)
           .eq('roll_number', borrowerQuery.trim()).order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (data) {
-          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: borrowerQuery.trim(), borrower_department: data.department }));
+          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: borrowerQuery.trim(), borrower_department: data.department, borrower_phone: data.mobile || '' }));
           toast.success('शिक्षक मिला! / Teacher found!');
         } else toast.info('Not found — enter manually');
       }
