@@ -54,7 +54,7 @@ export default function SignatureCanvas({ canvasRef, onClear }: Props) {
         <Label>{t('entry.signature')} *</Label>
         <Button type="button" variant="ghost" size="sm" onClick={onClear}>{t('entry.clear_signature')}</Button>
       </div>
-      <div className="border-2 border-dashed border-border rounded-lg overflow-hidden bg-white">
+      <div className="border-2 border-dashed border-border rounded-lg overflow-hidden bg-background">
         <canvas
           ref={canvasRef}
           width={400}
