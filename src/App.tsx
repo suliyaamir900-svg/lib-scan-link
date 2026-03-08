@@ -13,6 +13,8 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
+import Books from "./pages/Books";
+import BookIssues from "./pages/BookIssues";
 import QRCodePage from "./pages/QRCode";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
@@ -39,6 +41,8 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/students" element={<Students />} />
               <Route path="/teachers" element={<Teachers />} />
+              <Route path="/books" element={<Books />} />
+              <Route path="/book-issues" element={<BookIssues />} />
               <Route path="/qr-code" element={<QRCodePage />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<SettingsPage />} />
