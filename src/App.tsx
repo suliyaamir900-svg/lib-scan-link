@@ -29,7 +29,7 @@ import FineTracker from "./pages/FineTracker";
 import VisitorLog from "./pages/VisitorLog";
 import StudyRooms from "./pages/StudyRooms";
 import LibraryEvents from "./pages/LibraryEvents";
-import DigitalResources from "./pages/DigitalResources";
+
 import Gamification from "./pages/Gamification";
 import BookRecommendations from "./pages/BookRecommendations";
 import SeatHeatmap from "./pages/SeatHeatmap";
@@ -66,7 +66,7 @@ const App = () => (
               <Route path="/visitors" element={<VisitorLog />} />
               <Route path="/study-rooms" element={<StudyRooms />} />
               <Route path="/events" element={<LibraryEvents />} />
-              <Route path="/digital-library" element={<DigitalResources />} />
+              
               <Route path="/gamification" element={<Gamification />} />
               <Route path="/recommendations" element={<BookRecommendations />} />
               <Route path="/qr-code" element={<QRCodePage />} />

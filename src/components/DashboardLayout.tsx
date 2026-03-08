@@ -26,7 +26,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/visitors', icon: UserPlus, label: 'Visitors / आगंतुक' },
     { to: '/study-rooms', icon: DoorOpen, label: 'Study Rooms / कक्ष' },
     { to: '/events', icon: CalendarDays, label: 'Events / इवेंट्स' },
-    { to: '/digital-library', icon: FileDown, label: 'Digital Library' },
     { to: '/recommendations', icon: Sparkles, label: 'AI Suggestions' },
     { to: '/gamification', icon: Award, label: 'Gamification / गेम' },
     { to: '/search', icon: Search, label: 'Search / खोज' },
@@ -42,7 +41,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200
         lg:translate-x-0 lg:static lg:z-auto flex flex-col
@@ -79,7 +78,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       {sidebarOpen && <div className="fixed inset-0 bg-foreground/20 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="flex-1 flex flex-col min-h-screen lg:max-h-screen">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />

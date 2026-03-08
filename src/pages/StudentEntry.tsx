@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase, Armchair } from 'lucide-react';
+import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase, Armchair, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SignatureCanvas from '@/components/entry/SignatureCanvas';
 import RepeatEntryDetector from '@/components/entry/RepeatEntryDetector';
+import { Badge } from '@/components/ui/badge';
 
 const DEFAULT_DEPARTMENTS = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'MBA', 'MCA', 'BCA', 'BBA', 'B.Sc', 'M.Sc', 'B.Com', 'M.Com', 'BA', 'MA', 'B.Pharma', 'Anatomy', 'Physiology', 'Homeopathy', 'Pharmacy', 'Arts', 'Science', 'Commerce'];
 
@@ -32,6 +33,7 @@ export default function StudentEntry() {
   const [seats, setSeats] = useState<any[]>([]);
   const [occupiedSeatIds, setOccupiedSeatIds] = useState<Set<string>>(new Set());
   const [selectedSeatId, setSelectedSeatId] = useState<string>('');
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   const [form, setForm] = useState({
     userType: '' as 'student' | 'teacher' | '',
@@ -66,6 +68,9 @@ export default function StudentEntry() {
         const { data: todayEntries } = await supabase.from('student_entries').select('seat_id').eq('library_id', libraryId).eq('entry_date', today).is('exit_time', null);
         const occupied = new Set((todayEntries || []).filter(e => e.seat_id).map(e => e.seat_id));
         setOccupiedSeatIds(occupied as Set<string>);
+        // Fetch active announcements
+        const { data: annData } = await supabase.from('announcements').select('*').eq('library_id', libraryId).eq('is_active', true).order('created_at', { ascending: false }).limit(5);
+        setAnnouncements(annData || []);
       }
       setLibraryLoading(false);
     };
@@ -244,6 +249,21 @@ export default function StudentEntry() {
             <CardDescription>{libraryName}</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Announcements */}
+            {announcements.length > 0 && (
+              <div className="mb-4 space-y-2">
+                {announcements.map(a => (
+                  <div key={a.id} className="flex items-start gap-2 p-2.5 rounded-lg bg-accent/10 border border-accent/20">
+                    <Megaphone className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-accent">{a.title}</p>
+                      {a.message && <p className="text-[11px] text-muted-foreground leading-tight">{a.message}</p>}
+                    </div>
+                    <Badge variant="outline" className="text-[9px] shrink-0">{a.type}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
             {/* Progress Bar */}
             <div className="flex items-center gap-1 mb-6">
               {Array.from({ length: totalSteps }, (_, i) => (
