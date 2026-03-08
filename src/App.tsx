@@ -27,6 +27,12 @@ import Announcements from "./pages/Announcements";
 import Notifications from "./pages/Notifications";
 import FineTracker from "./pages/FineTracker";
 import VisitorLog from "./pages/VisitorLog";
+import StudyRooms from "./pages/StudyRooms";
+import LibraryEvents from "./pages/LibraryEvents";
+import DigitalResources from "./pages/DigitalResources";
+import Gamification from "./pages/Gamification";
+import BookRecommendations from "./pages/BookRecommendations";
+import SeatHeatmap from "./pages/SeatHeatmap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,16 +57,22 @@ const App = () => (
               <Route path="/books" element={<Books />} />
               <Route path="/book-issues" element={<BookIssues />} />
               <Route path="/seats" element={<SeatManagement />} />
+              <Route path="/seat-heatmap" element={<SeatHeatmap />} />
               <Route path="/search" element={<SmartSearch />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/qr-code" element={<QRCodePage />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/announcements" element={<Announcements />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/fines" element={<FineTracker />} />
               <Route path="/visitors" element={<VisitorLog />} />
+              <Route path="/study-rooms" element={<StudyRooms />} />
+              <Route path="/events" element={<LibraryEvents />} />
+              <Route path="/digital-library" element={<DigitalResources />} />
+              <Route path="/gamification" element={<Gamification />} />
+              <Route path="/recommendations" element={<BookRecommendations />} />
+              <Route path="/qr-code" element={<QRCodePage />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
