@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -6,13 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Plus, Edit, Trash2, Loader2, BookOpen, MapPin, ChevronLeft, ChevronRight, Package, Tag, Copy, CheckCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2, BookOpen, MapPin, ChevronLeft, ChevronRight, Package, Tag, Copy, CheckCircle, Upload, Download, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 const PAGE_SIZE = 15;
 
@@ -37,8 +37,11 @@ export default function Books() {
   const [saving, setSaving] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
-  const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
   const [viewBook, setViewBook] = useState<any>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -47,8 +50,8 @@ export default function Books() {
       setLibrary(lib);
       if (lib) {
         const [booksRes, catsRes] = await Promise.all([
-          (supabase as any).from('books').select('*').eq('library_id', lib.id).order('title', { ascending: true }),
-          (supabase as any).from('book_categories').select('*').eq('library_id', lib.id).order('name'),
+          supabase.from('books').select('*').eq('library_id', lib.id).order('title', { ascending: true }),
+          supabase.from('book_categories').select('*').eq('library_id', lib.id).order('name'),
         ]);
         setBooks(booksRes.data || []);
         setCategories(catsRes.data || []);
@@ -72,11 +75,7 @@ export default function Books() {
   const pageBooks = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const uniqueCats = [...new Set(books.map(b => b.category_name).filter(Boolean))].sort();
 
-  const openAdd = () => {
-    setEditBook(null);
-    setForm({ ...emptyBook });
-    setDialogOpen(true);
-  };
+  const openAdd = () => { setEditBook(null); setForm({ ...emptyBook }); setDialogOpen(true); };
 
   const openEdit = (book: any) => {
     setEditBook(book);
@@ -90,103 +89,133 @@ export default function Books() {
   };
 
   const handleSave = async () => {
-    if (!form.title.trim()) { toast.error('Book title is required / किताब का शीर्षक ज़रूरी है'); return; }
-    if (!library) { toast.error('Library not found'); return; }
+    if (!form.title.trim()) { toast.error('किताब का शीर्षक ज़रूरी है / Book title required'); return; }
+    if (!library) return;
     setSaving(true);
-
     try {
       if (editBook) {
-        const { error } = await (supabase as any).from('books').update({
-          title: form.title.trim(),
-          author: form.author.trim(),
-          publisher: form.publisher.trim(),
-          edition: form.edition.trim(),
-          isbn: form.isbn.trim(),
-          category_name: form.category_name || '',
-          total_copies: form.total_copies,
-          available_copies: form.available_copies,
-          rack_number: form.rack_number.trim(),
-          row_number: form.row_number.trim(),
-          shelf_number: form.shelf_number.trim(),
+        const { error } = await supabase.from('books').update({
+          title: form.title.trim(), author: form.author.trim(), publisher: form.publisher.trim(),
+          edition: form.edition.trim(), isbn: form.isbn.trim(), category_name: form.category_name || '',
+          total_copies: form.total_copies, available_copies: form.available_copies,
+          rack_number: form.rack_number.trim(), row_number: form.row_number.trim(), shelf_number: form.shelf_number.trim(),
           updated_at: new Date().toISOString(),
         }).eq('id', editBook.id);
-
-        if (error) {
-          console.error('Update error:', error);
-          toast.error(`Update failed: ${error.message}`);
-        } else {
+        if (error) { toast.error(`Update failed: ${error.message}`); }
+        else {
           setBooks(prev => prev.map(b => b.id === editBook.id ? { ...b, ...form, title: form.title.trim(), author: form.author.trim() } : b));
-          toast.success('✅ Book updated / किताब अपडेट हुई');
+          toast.success('✅ किताब अपडेट हुई / Book updated');
           setDialogOpen(false);
         }
       } else {
-        const insertData = {
-          library_id: library.id,
-          title: form.title.trim(),
-          author: form.author.trim(),
-          publisher: form.publisher.trim(),
-          edition: form.edition.trim(),
-          isbn: form.isbn.trim(),
-          category_name: form.category_name || '',
-          total_copies: form.total_copies,
-          available_copies: form.available_copies,
-          rack_number: form.rack_number.trim(),
-          row_number: form.row_number.trim(),
-          shelf_number: form.shelf_number.trim(),
-        };
-
-        const { data, error } = await (supabase as any).from('books').insert(insertData).select().single();
-
-        if (error) {
-          console.error('Insert error:', error);
-          toast.error(`Add failed: ${error.message}`);
-        } else {
+        const { data, error } = await supabase.from('books').insert({
+          library_id: library.id, title: form.title.trim(), author: form.author.trim(),
+          publisher: form.publisher.trim(), edition: form.edition.trim(), isbn: form.isbn.trim(),
+          category_name: form.category_name || '', total_copies: form.total_copies, available_copies: form.available_copies,
+          rack_number: form.rack_number.trim(), row_number: form.row_number.trim(), shelf_number: form.shelf_number.trim(),
+        }).select().single();
+        if (error) { toast.error(`Add failed: ${error.message}`); }
+        else {
           setBooks(prev => [data, ...prev]);
-          toast.success('✅ Book added successfully / किताब जोड़ी गई');
+          toast.success('✅ किताब जोड़ी गई / Book added!');
           setDialogOpen(false);
-          // Reset form for next add
           setForm({ ...emptyBook });
         }
       }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      toast.error('Something went wrong');
-    }
+    } catch { toast.error('Something went wrong'); }
     setSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this book? / यह किताब हटाएं?')) return;
-    const { error } = await (supabase as any).from('books').delete().eq('id', id);
-    if (error) { toast.error(`Delete failed: ${error.message}`); console.error(error); }
-    else {
-      setBooks(prev => prev.filter(b => b.id !== id));
-      toast.success('Book deleted / किताब हटाई गई');
-    }
+    const { error } = await supabase.from('books').delete().eq('id', id);
+    if (error) toast.error(`Delete failed: ${error.message}`);
+    else { setBooks(prev => prev.filter(b => b.id !== id)); toast.success('किताब हटाई गई / Book deleted'); }
   };
 
   const handleAddCategory = async () => {
     if (!newCatName.trim() || !library) return;
-    const { data, error } = await (supabase as any).from('book_categories').insert({
+    const { data, error } = await supabase.from('book_categories').insert({
       library_id: library.id, name: newCatName.trim(),
     }).select().single();
-    if (error) {
-      console.error(error);
-      toast.error(error.message.includes('duplicate') ? 'Category already exists' : `Failed: ${error.message}`);
-    } else {
-      setCategories(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
-      toast.success('✅ Category added / श्रेणी जोड़ी गई');
+    if (error) toast.error(error.message.includes('duplicate') ? 'Category already exists' : `Failed: ${error.message}`);
+    else {
+      setCategories(prev => [...prev, data].sort((a: any, b: any) => a.name.localeCompare(b.name)));
+      toast.success('✅ श्रेणी जोड़ी गई / Category added');
       setNewCatName('');
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
-    const { error } = await (supabase as any).from('book_categories').delete().eq('id', id);
-    if (error) toast.error('Failed to delete category');
+    const { error } = await supabase.from('book_categories').delete().eq('id', id);
+    if (error) toast.error('Failed to delete');
+    else { setCategories(prev => prev.filter(c => c.id !== id)); toast.success('Category deleted'); }
+  };
+
+  // Bulk Import
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws) as any[];
+        if (data.length === 0) { toast.error('Excel file is empty'); return; }
+        // Validate columns
+        const required = ['title'];
+        const hasTitle = data.every(row => row.title || row.Title || row['Book Title']);
+        if (!hasTitle) { toast.error('Excel must have a "Title" or "Book Title" column'); return; }
+        // Normalize
+        const normalized = data.map(row => ({
+          title: (row.title || row.Title || row['Book Title'] || '').toString().trim(),
+          author: (row.author || row.Author || '').toString().trim(),
+          isbn: (row.isbn || row.ISBN || '').toString().trim(),
+          category_name: (row.category || row.Category || row.category_name || '').toString().trim(),
+          publisher: (row.publisher || row.Publisher || '').toString().trim(),
+          edition: (row.edition || row.Edition || '').toString().trim(),
+          rack_number: (row.rack || row.Rack || row.rack_number || row['Rack Number'] || '').toString().trim(),
+          row_number: (row.row || row.Row || row.row_number || row['Row Number'] || '').toString().trim(),
+          shelf_number: (row.shelf || row.Shelf || row.shelf_number || row['Shelf Number'] || '').toString().trim(),
+          total_copies: parseInt(row.copies || row.Copies || row.total_copies || row['Total Copies'] || '1') || 1,
+        })).filter(r => r.title);
+        setImportData(normalized);
+        setImportDialogOpen(true);
+      } catch { toast.error('Invalid Excel file'); }
+    };
+    reader.readAsBinaryString(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleBulkImport = async () => {
+    if (!library || importData.length === 0) return;
+    setImporting(true);
+    const rows = importData.map(r => ({
+      library_id: library.id, title: r.title, author: r.author, isbn: r.isbn,
+      category_name: r.category_name, publisher: r.publisher, edition: r.edition,
+      rack_number: r.rack_number, row_number: r.row_number, shelf_number: r.shelf_number,
+      total_copies: r.total_copies, available_copies: r.total_copies,
+    }));
+    const { data, error } = await supabase.from('books').insert(rows).select();
+    if (error) { toast.error(`Import failed: ${error.message}`); }
     else {
-      setCategories(prev => prev.filter(c => c.id !== id));
-      toast.success('Category deleted');
+      setBooks(prev => [...(data || []), ...prev]);
+      toast.success(`✅ ${data?.length || 0} books imported! / किताबें इम्पोर्ट हो गईं!`);
+      setImportDialogOpen(false);
+      setImportData([]);
     }
+    setImporting(false);
+  };
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      { Title: 'Data Structures', Author: 'R.S. Salaria', ISBN: '978-0-13-468599-1', Category: 'CSE', Publisher: 'S. Chand', Edition: '5th', Rack: 'A', Row: '1', Shelf: '3', Copies: 5 },
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Books');
+    XLSX.writeFile(wb, 'book-import-template.xlsx');
+    toast.success('Template downloaded!');
   };
 
   const totalCopies = books.reduce((s, b) => s + (b.total_copies || 0), 0);
@@ -199,10 +228,14 @@ export default function Books() {
           <BookOpen className="h-6 w-6 text-primary" />
           Books / किताबें
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setCatDialogOpen(true)} className="gap-1">
             <Tag className="h-3.5 w-3.5" /> Categories
           </Button>
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1">
+            <Upload className="h-3.5 w-3.5" /> Bulk Import
+          </Button>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileUpload} />
           <Button size="sm" onClick={openAdd} className="gradient-primary text-primary-foreground gap-1 shadow-primary">
             <Plus className="h-4 w-4" /> Add Book / किताब जोड़ें
           </Button>
@@ -262,12 +295,17 @@ export default function Books() {
             </div>
             <h3 className="font-semibold mb-1">{books.length === 0 ? 'No books yet / अभी कोई किताब नहीं' : 'No matching books / कोई मिलान नहीं'}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              {books.length === 0 ? 'Click "Add Book" to add your first book / "किताब जोड़ें" पर क्लिक करें' : 'Try a different search / अलग खोज करें'}
+              {books.length === 0 ? '"Add Book" पर क्लिक करें या Excel से import करें' : 'Try a different search / अलग खोज करें'}
             </p>
             {books.length === 0 && (
-              <Button onClick={openAdd} className="gradient-primary text-primary-foreground gap-1">
-                <Plus className="h-4 w-4" /> Add First Book
-              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={openAdd} className="gradient-primary text-primary-foreground gap-1">
+                  <Plus className="h-4 w-4" /> Add Book
+                </Button>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-1">
+                  <Upload className="h-4 w-4" /> Import Excel
+                </Button>
+              </div>
             )}
           </CardContent>
         ) : (
@@ -281,7 +319,7 @@ export default function Books() {
                     <TableHead>Category</TableHead>
                     <TableHead className="text-center">Copies</TableHead>
                     <TableHead className="text-center">Available</TableHead>
-                    <TableHead>Location</TableHead>
+                    <TableHead>Location / स्थान</TableHead>
                     <TableHead className="w-24 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -302,7 +340,7 @@ export default function Books() {
                       </TableCell>
                       <TableCell className="text-center font-medium">{book.total_copies}</TableCell>
                       <TableCell className="text-center">
-                        <span className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-sm font-bold ${book.available_copies > 0 ? 'bg-green-100 text-green-700' : 'bg-destructive/10 text-destructive'}`}>
+                        <span className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-sm font-bold ${book.available_copies > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-destructive/10 text-destructive'}`}>
                           {book.available_copies}
                         </span>
                       </TableCell>
@@ -338,7 +376,7 @@ export default function Books() {
         )}
       </Card>
 
-      {/* View Book Detail Dialog */}
+      {/* View Book Detail */}
       <Dialog open={!!viewBook} onOpenChange={() => setViewBook(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -349,12 +387,12 @@ export default function Books() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
-                  ['Publisher', viewBook.publisher],
-                  ['Edition', viewBook.edition],
+                  ['Publisher / प्रकाशक', viewBook.publisher],
+                  ['Edition / संस्करण', viewBook.edition],
                   ['ISBN', viewBook.isbn],
-                  ['Category', viewBook.category_name],
-                  ['Total Copies', viewBook.total_copies],
-                  ['Available', viewBook.available_copies],
+                  ['Category / श्रेणी', viewBook.category_name],
+                  ['Total Copies / कुल', viewBook.total_copies],
+                  ['Available / उपलब्ध', viewBook.available_copies],
                 ].filter(([, v]) => v).map(([label, value], i) => (
                   <div key={i} className="p-2 rounded-lg bg-muted/50">
                     <p className="text-xs text-muted-foreground">{label}</p>
@@ -363,18 +401,20 @@ export default function Books() {
                 ))}
               </div>
               {(viewBook.rack_number || viewBook.row_number || viewBook.shelf_number) && (
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">
-                    {[viewBook.rack_number && `Rack ${viewBook.rack_number}`, viewBook.row_number && `Row ${viewBook.row_number}`, viewBook.shelf_number && `Shelf ${viewBook.shelf_number}`].filter(Boolean).join(' · ')}
-                  </span>
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><MapPin className="h-3 w-3" /> Book Location / किताब का स्थान</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {viewBook.rack_number && <div className="text-center p-2 rounded bg-background"><p className="text-xs text-muted-foreground">Rack</p><p className="font-bold text-primary">{viewBook.rack_number}</p></div>}
+                    {viewBook.row_number && <div className="text-center p-2 rounded bg-background"><p className="text-xs text-muted-foreground">Row</p><p className="font-bold text-primary">{viewBook.row_number}</p></div>}
+                    {viewBook.shelf_number && <div className="text-center p-2 rounded bg-background"><p className="text-xs text-muted-foreground">Shelf</p><p className="font-bold text-primary">{viewBook.shelf_number}</p></div>}
+                  </div>
                 </div>
               )}
               <div className="flex gap-2">
                 <Button className="flex-1" variant="outline" onClick={() => { setViewBook(null); openEdit(viewBook); }}>
-                  <Edit className="h-4 w-4 mr-1" /> Edit
+                  <Edit className="h-4 w-4 mr-1" /> Edit / संपादित
                 </Button>
-                <Button className="flex-1 gradient-primary text-primary-foreground" onClick={() => setViewBook(null)}>Close</Button>
+                <Button className="flex-1 gradient-primary text-primary-foreground" onClick={() => setViewBook(null)}>Close / बंद</Button>
               </div>
             </div>
           )}
@@ -387,7 +427,7 @@ export default function Books() {
           <DialogHeader>
             <DialogTitle>{editBook ? '✏️ Edit Book / किताब संपादित करें' : '📚 Add New Book / नई किताब जोड़ें'}</DialogTitle>
             <DialogDescription>
-              {editBook ? 'Update the book details below' : 'Fill in the details to add a new book to your library'}
+              {editBook ? 'Update the book details' : 'Fill in details to add a new book'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -402,13 +442,13 @@ export default function Books() {
               </div>
               <div className="space-y-2">
                 <Label>Publisher / प्रकाशक</Label>
-                <Input value={form.publisher} onChange={e => setForm(p => ({ ...p, publisher: e.target.value }))} placeholder="Publisher name" />
+                <Input value={form.publisher} onChange={e => setForm(p => ({ ...p, publisher: e.target.value }))} placeholder="Publisher" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Edition / संस्करण</Label>
-                <Input value={form.edition} onChange={e => setForm(p => ({ ...p, edition: e.target.value }))} placeholder="e.g. 5th Edition" />
+                <Input value={form.edition} onChange={e => setForm(p => ({ ...p, edition: e.target.value }))} placeholder="e.g. 5th" />
               </div>
               <div className="space-y-2">
                 <Label>ISBN</Label>
@@ -418,9 +458,7 @@ export default function Books() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Category / श्रेणी</Label>
-                <Button type="button" variant="ghost" size="sm" className="text-xs h-6" onClick={() => setCatDialogOpen(true)}>
-                  + New Category
-                </Button>
+                <Button type="button" variant="ghost" size="sm" className="text-xs h-6" onClick={() => setCatDialogOpen(true)}>+ New Category</Button>
               </div>
               <Select value={form.category_name || '__none'} onValueChange={v => setForm(p => ({ ...p, category_name: v === '__none' ? '' : v }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
@@ -475,16 +513,16 @@ export default function Books() {
         </DialogContent>
       </Dialog>
 
-      {/* Category Management Dialog */}
+      {/* Category Management */}
       <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>📂 Categories / श्रेणियां</DialogTitle>
-            <DialogDescription>Manage your book categories</DialogDescription>
+            <DialogDescription>Manage book categories</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-2">
-              <Input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="New category name / नई श्रेणी" className="h-10" onKeyDown={e => e.key === 'Enter' && handleAddCategory()} />
+              <Input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="New category / नई श्रेणी" className="h-10" onKeyDown={e => e.key === 'Enter' && handleAddCategory()} />
               <Button onClick={handleAddCategory} disabled={!newCatName.trim()} className="gradient-primary text-primary-foreground h-10 px-4">Add</Button>
             </div>
             {categories.length > 0 ? (
@@ -499,9 +537,67 @@ export default function Books() {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-sm text-muted-foreground py-4">No categories yet / अभी कोई श्रेणी नहीं</p>
+              <p className="text-center text-sm text-muted-foreground py-4">No categories yet</p>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-green-600" />
+              Bulk Import / बल्क इम्पोर्ट
+            </DialogTitle>
+            <DialogDescription>{importData.length} books found in file / फ़ाइल में {importData.length} किताबें मिलीं</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Preview / पूर्वावलोकन</p>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={downloadTemplate}>
+                <Download className="h-3 w-3" /> Download Template
+              </Button>
+            </div>
+            <div className="max-h-60 overflow-auto border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">#</TableHead>
+                    <TableHead className="text-xs">Title</TableHead>
+                    <TableHead className="text-xs">Author</TableHead>
+                    <TableHead className="text-xs">Copies</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {importData.slice(0, 20).map((row, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-xs">{i + 1}</TableCell>
+                      <TableCell className="text-xs font-medium">{row.title}</TableCell>
+                      <TableCell className="text-xs">{row.author || '-'}</TableCell>
+                      <TableCell className="text-xs">{row.total_copies}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {importData.length > 20 && (
+                <p className="text-xs text-muted-foreground text-center py-2">...and {importData.length - 20} more</p>
+              )}
+            </div>
+            {importData.some(r => !r.title) && (
+              <div className="flex items-center gap-2 p-2 rounded bg-destructive/10 text-xs text-destructive">
+                <AlertTriangle className="h-4 w-4" /> Some rows have missing titles and will be skipped
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setImportDialogOpen(false); setImportData([]); }}>Cancel / रद्द</Button>
+            <Button onClick={handleBulkImport} disabled={importing} className="gradient-primary text-primary-foreground gap-1">
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              Import {importData.length} Books
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
