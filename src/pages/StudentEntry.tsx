@@ -29,6 +29,10 @@ export default function StudentEntry() {
   const [deptSearch, setDeptSearch] = useState('');
   const [showCustomDept, setShowCustomDept] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
+  const [seats, setSeats] = useState<any[]>([]);
+  const [occupiedSeatIds, setOccupiedSeatIds] = useState<Set<string>>(new Set());
+  const [selectedSeatId, setSelectedSeatId] = useState<string>('');
+  const [autoFilled, setAutoFilled] = useState(false);
 
   const [form, setForm] = useState({
     userType: '' as 'student' | 'teacher' | '',
