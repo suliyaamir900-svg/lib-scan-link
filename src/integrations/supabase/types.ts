@@ -14,6 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      book_categories: {
+        Row: {
+          created_at: string
+          id: string
+          library_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          library_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          library_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_categories_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_issues: {
+        Row: {
+          actual_return_date: string | null
+          book_id: string
+          borrower_department: string | null
+          borrower_id: string
+          borrower_name: string
+          borrower_type: string
+          created_at: string
+          fine_amount: number | null
+          fine_per_day: number | null
+          id: string
+          issue_date: string
+          library_id: string
+          notes: string | null
+          return_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_return_date?: string | null
+          book_id: string
+          borrower_department?: string | null
+          borrower_id: string
+          borrower_name: string
+          borrower_type?: string
+          created_at?: string
+          fine_amount?: number | null
+          fine_per_day?: number | null
+          id?: string
+          issue_date?: string
+          library_id: string
+          notes?: string | null
+          return_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_return_date?: string | null
+          book_id?: string
+          borrower_department?: string | null
+          borrower_id?: string
+          borrower_name?: string
+          borrower_type?: string
+          created_at?: string
+          fine_amount?: number | null
+          fine_per_day?: number | null
+          id?: string
+          issue_date?: string
+          library_id?: string
+          notes?: string | null
+          return_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_issues_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_issues_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
+        Row: {
+          author: string
+          available_copies: number
+          category_id: string | null
+          category_name: string | null
+          created_at: string
+          edition: string | null
+          id: string
+          isbn: string | null
+          library_id: string
+          publisher: string | null
+          rack_number: string | null
+          row_number: string | null
+          shelf_number: string | null
+          title: string
+          total_copies: number
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          available_copies?: number
+          category_id?: string | null
+          category_name?: string | null
+          created_at?: string
+          edition?: string | null
+          id?: string
+          isbn?: string | null
+          library_id: string
+          publisher?: string | null
+          rack_number?: string | null
+          row_number?: string | null
+          shelf_number?: string | null
+          title: string
+          total_copies?: number
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          available_copies?: number
+          category_id?: string | null
+          category_name?: string | null
+          created_at?: string
+          edition?: string | null
+          id?: string
+          isbn?: string | null
+          library_id?: string
+          publisher?: string | null
+          rack_number?: string | null
+          row_number?: string | null
+          shelf_number?: string | null
+          title?: string
+          total_copies?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "books_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "book_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       libraries: {
         Row: {
           admin_name: string
