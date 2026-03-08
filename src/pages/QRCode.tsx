@@ -37,6 +37,7 @@ export default function QRCodePage() {
   if (!user) return <Navigate to="/login" />;
 
   const entryUrl = library ? `${window.location.origin}/entry/${library.id}` : '';
+  const portalUrl = library ? `${window.location.origin}/portal/${library.id}` : '';
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(entryUrl);
