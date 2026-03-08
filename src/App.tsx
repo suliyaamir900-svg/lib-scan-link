@@ -20,6 +20,9 @@ import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
 import SuperAdmin from "./pages/SuperAdmin";
 import StudentEntry from "./pages/StudentEntry";
+import SeatManagement from "./pages/SeatManagement";
+import SmartSearch from "./pages/SmartSearch";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +46,9 @@ const App = () => (
               <Route path="/teachers" element={<Teachers />} />
               <Route path="/books" element={<Books />} />
               <Route path="/book-issues" element={<BookIssues />} />
+              <Route path="/seats" element={<SeatManagement />} />
+              <Route path="/search" element={<SmartSearch />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/qr-code" element={<QRCodePage />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<SettingsPage />} />

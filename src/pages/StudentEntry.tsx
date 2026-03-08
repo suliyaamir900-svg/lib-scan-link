@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase } from 'lucide-react';
+import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase, Armchair } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SignatureCanvas from '@/components/entry/SignatureCanvas';
@@ -29,6 +29,9 @@ export default function StudentEntry() {
   const [deptSearch, setDeptSearch] = useState('');
   const [showCustomDept, setShowCustomDept] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
+  const [seats, setSeats] = useState<any[]>([]);
+  const [occupiedSeatIds, setOccupiedSeatIds] = useState<Set<string>>(new Set());
+  const [selectedSeatId, setSelectedSeatId] = useState<string>('');
 
   const [form, setForm] = useState({
     userType: '' as 'student' | 'teacher' | '',
@@ -55,6 +58,14 @@ export default function StudentEntry() {
         setLibraryNotFound(true);
       } else {
         setLibraryName(`${data.name} - ${data.college_name}`);
+        // Fetch seats
+        const { data: seatsData } = await supabase.from('library_seats').select('*').eq('library_id', libraryId).eq('is_active', true).order('seat_number');
+        setSeats(seatsData || []);
+        // Fetch today's entries to find occupied seats
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayEntries } = await supabase.from('student_entries').select('seat_id').eq('library_id', libraryId).eq('entry_date', today).is('exit_time', null);
+        const occupied = new Set((todayEntries || []).filter(e => e.seat_id).map(e => e.seat_id));
+        setOccupiedSeatIds(occupied as Set<string>);
       }
       setLibraryLoading(false);
     };
@@ -118,6 +129,7 @@ export default function StudentEntry() {
       email: form.email.trim() || null,
       id_card_number: form.idCard.trim() || null,
       device_info: navigator.userAgent,
+      seat_id: selectedSeatId || null,
     });
 
     // Auto-register in students/teachers table
@@ -395,6 +407,37 @@ export default function StudentEntry() {
                   </>
                 )}
 
+                {/* Seat Selection */}
+                {seats.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1"><Armchair className="h-4 w-4" /> Select Seat / सीट चुनें (Optional)</Label>
+                    <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto p-2 border rounded-lg">
+                      <button type="button" onClick={() => setSelectedSeatId('')}
+                        className={`text-[10px] p-1.5 rounded border transition-all ${!selectedSeatId ? 'border-primary bg-primary/10 font-bold' : 'border-border hover:border-primary/50'}`}>
+                        None
+                      </button>
+                      {seats.map(s => {
+                        const isOccupied = occupiedSeatIds.has(s.id);
+                        return (
+                          <button key={s.id} type="button" disabled={isOccupied}
+                            onClick={() => setSelectedSeatId(s.id)}
+                            className={`text-[10px] p-1.5 rounded border transition-all ${
+                              isOccupied ? 'bg-destructive/10 text-destructive/50 cursor-not-allowed' :
+                              selectedSeatId === s.id ? 'border-primary bg-primary/10 font-bold text-primary' :
+                              'border-border hover:border-primary/50'
+                            }`}>
+                            {s.seat_number}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-3 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-green-500" /> Free</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-destructive" /> Occupied</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <Button variant="outline" className="flex-1 h-11" onClick={() => setStep(2)}>
                     <ChevronLeft className="h-4 w-4 mr-1" /> Back
@@ -442,6 +485,7 @@ export default function StudentEntry() {
                   {form.email && <div className="flex justify-between"><span className="text-muted-foreground">Email:</span><span className="font-medium">{form.email}</span></div>}
                   <div className="flex justify-between"><span className="text-muted-foreground">Date:</span><span className="font-medium">{new Date().toLocaleDateString('en-IN')}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Time:</span><span className="font-medium">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
+                  {selectedSeatId && <div className="flex justify-between"><span className="text-muted-foreground">Seat:</span><span className="font-medium">{seats.find(s => s.id === selectedSeatId)?.seat_number || '-'}</span></div>}
                 </div>
 
                 <div className="flex gap-3">

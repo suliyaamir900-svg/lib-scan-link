@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy, Armchair, Search, Trophy
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -20,6 +20,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/teachers', icon: Briefcase, label: 'Teachers / शिक्षक' },
     { to: '/books', icon: Library, label: 'Books / किताबें' },
     { to: '/book-issues', icon: BookCopy, label: 'Issue/Return' },
+    { to: '/seats', icon: Armchair, label: 'Seats / सीटें' },
+    { to: '/search', icon: Search, label: 'Search / खोज' },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
@@ -44,7 +47,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <nav className="p-3 space-y-1">
+        <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-8rem)]">
           {navItems.map(item => (
             <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}>
               <div className={`
