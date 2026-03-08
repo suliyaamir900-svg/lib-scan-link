@@ -29,7 +29,7 @@ import FineTracker from "./pages/FineTracker";
 import VisitorLog from "./pages/VisitorLog";
 import StudyRooms from "./pages/StudyRooms";
 import LibraryEvents from "./pages/LibraryEvents";
-import DigitalResources from "./pages/DigitalResources";
+
 import Gamification from "./pages/Gamification";
 import BookRecommendations from "./pages/BookRecommendations";
 import SeatHeatmap from "./pages/SeatHeatmap";
