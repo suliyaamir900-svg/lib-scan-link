@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase, DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy } from 'lucide-react';
+import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase, DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy, Megaphone, IndianRupee } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Link } from 'react-router-dom';
 
 const COLORS = ['hsl(250, 80%, 60%)', 'hsl(200, 90%, 55%)', 'hsl(320, 75%, 55%)', 'hsl(30, 90%, 55%)', 'hsl(160, 70%, 45%)', 'hsl(0, 84%, 60%)'];
 
