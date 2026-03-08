@@ -19,7 +19,7 @@ import BookIssues from "./pages/BookIssues";
 import QRCodePage from "./pages/QRCode";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
-import SuperAdmin from "./pages/SuperAdmin";
+
 import StudentEntry from "./pages/StudentEntry";
 import StudentPortal from "./pages/StudentPortal";
 import SeatManagement from "./pages/SeatManagement";
@@ -75,7 +75,7 @@ const App = () => (
               <Route path="/qr-code" element={<QRCodePage />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/super-admin" element={<SuperAdmin />} />
+              
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
               <Route path="/portal/:libraryId" element={<StudentPortal />} />
               <Route path="/about" element={<About />} />

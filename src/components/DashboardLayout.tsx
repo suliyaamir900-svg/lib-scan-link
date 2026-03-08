@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy, Armchair, Search, Trophy, Bell, Megaphone, IndianRupee, UserPlus, DoorOpen, CalendarDays, FileDown, Award, Sparkles, BarChart3
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Briefcase, Library, BookCopy, Armchair, Search, Trophy, Bell, Megaphone, IndianRupee, UserPlus, DoorOpen, CalendarDays, Award, Sparkles, BarChart3
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -35,7 +35,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
-    { to: '/super-admin', icon: Shield, label: t('nav.super_admin') },
+    
   ];
 
   const isActive = (path: string) => location.pathname === path;
