@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy, Armchair, Search, Trophy
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy, Armchair, Search, Trophy, Bell, Megaphone, IndianRupee, UserPlus
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -20,9 +20,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/teachers', icon: Briefcase, label: 'Teachers / शिक्षक' },
     { to: '/books', icon: Library, label: 'Books / किताबें' },
     { to: '/book-issues', icon: BookCopy, label: 'Issue/Return' },
+    { to: '/fines', icon: IndianRupee, label: 'Fines / जुर्माना' },
     { to: '/seats', icon: Armchair, label: 'Seats / सीटें' },
+    { to: '/visitors', icon: UserPlus, label: 'Visitors / आगंतुक' },
     { to: '/search', icon: Search, label: 'Search / खोज' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { to: '/announcements', icon: Megaphone, label: 'Announcements / घोषणा' },
+    { to: '/notifications', icon: Bell, label: 'Notifications / सूचना' },
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
@@ -35,10 +39,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background flex">
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200
-        lg:translate-x-0 lg:static lg:z-auto
+        lg:translate-x-0 lg:static lg:z-auto flex flex-col
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center gap-2 h-16 px-4 border-b">
+        <div className="flex items-center gap-2 h-16 px-4 border-b shrink-0">
           <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center">
             <BookOpen className="h-5 w-5 text-primary-foreground" />
           </div>
@@ -47,11 +51,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-8rem)]">
+        <nav className="p-3 space-y-1 overflow-y-auto flex-1">
           {navItems.map(item => (
             <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}>
               <div className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                 ${isActive(item.to) ? 'gradient-primary text-primary-foreground shadow-primary' : 'text-muted-foreground hover:bg-muted'}
               `}>
                 <item.icon className="h-4 w-4" />
@@ -60,7 +64,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-4 left-3 right-3">
+        <div className="p-3 border-t shrink-0">
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={signOut}>
             <LogOut className="h-4 w-4" /> {t('auth.logout')}
           </Button>
@@ -69,15 +73,15 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       {sidebarOpen && <div className="fixed inset-0 bg-foreground/20 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="flex-1 flex flex-col min-h-screen">
-        <header className="h-16 border-b flex items-center justify-between px-4 bg-card">
+      <div className="flex-1 flex flex-col min-h-screen lg:max-h-screen">
+        <header className="h-16 border-b flex items-center justify-between px-4 bg-card shrink-0">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex-1" />
           <LanguageToggle />
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           {children}
         </main>
       </div>
