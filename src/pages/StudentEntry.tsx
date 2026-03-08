@@ -129,6 +129,7 @@ export default function StudentEntry() {
       email: form.email.trim() || null,
       id_card_number: form.idCard.trim() || null,
       device_info: navigator.userAgent,
+      seat_id: selectedSeatId || null,
     });
 
     // Auto-register in students/teachers table
