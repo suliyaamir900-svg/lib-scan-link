@@ -526,6 +526,12 @@ export default function StudentEntry() {
                   <div className="flex justify-between"><span className="text-muted-foreground">Date:</span><span className="font-medium">{new Date().toLocaleDateString('en-IN')}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Time:</span><span className="font-medium">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
                   {selectedSeatId && <div className="flex justify-between"><span className="text-muted-foreground">Seat:</span><span className="font-medium">{seats.find(s => s.id === selectedSeatId)?.seat_number || '-'}</span></div>}
+                  {signatureDataUrl && (
+                    <div className="space-y-2 pt-2">
+                      <span className="text-muted-foreground">Signature:</span>
+                      <img src={signatureDataUrl} alt="Captured signature" className="h-20 w-full rounded-md border border-border bg-background object-contain" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
