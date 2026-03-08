@@ -35,7 +35,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
-    { to: '/super-admin', icon: Shield, label: t('nav.super_admin') },
+    
   ];
 
   const isActive = (path: string) => location.pathname === path;
