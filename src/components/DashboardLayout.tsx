@@ -26,7 +26,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/visitors', icon: UserPlus, label: 'Visitors / आगंतुक' },
     { to: '/study-rooms', icon: DoorOpen, label: 'Study Rooms / कक्ष' },
     { to: '/events', icon: CalendarDays, label: 'Events / इवेंट्स' },
-    { to: '/digital-library', icon: FileDown, label: 'Digital Library' },
     { to: '/recommendations', icon: Sparkles, label: 'AI Suggestions' },
     { to: '/gamification', icon: Award, label: 'Gamification / गेम' },
     { to: '/search', icon: Search, label: 'Search / खोज' },
