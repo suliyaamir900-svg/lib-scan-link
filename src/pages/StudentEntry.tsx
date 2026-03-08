@@ -489,19 +489,19 @@ export default function StudentEntry() {
             <CardContent className="space-y-4">
               {!activeEntry ? (
                 <>
-                  <p className="text-xs text-center text-muted-foreground">Enter Roll No / Employee ID or Phone to find your entry</p>
+                  <p className="text-xs text-center text-muted-foreground">Enter Roll No / Employee ID / Name or Phone to find your entry</p>
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Roll Number / Employee ID</Label>
+                      <Label className="text-xs">Roll No / Employee ID / Name</Label>
                       <Input value={exitQuery} onChange={e => setExitQuery(e.target.value)}
-                        placeholder="e.g. 2024001 or EMP001"
+                        placeholder="e.g. 2024001 or Amir"
                         onKeyDown={e => e.key === 'Enter' && handleExitSearch()} />
                     </div>
                     <div className="text-center text-xs text-muted-foreground">OR / या</div>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Phone Number / फोन नंबर</Label>
                       <Input value={exitPhone} onChange={e => setExitPhone(e.target.value)}
-                        placeholder="+91 98765 43210" type="tel"
+                        placeholder="98765 43210" type="tel"
                         onKeyDown={e => e.key === 'Enter' && handleExitSearch()} />
                     </div>
                   </div>
