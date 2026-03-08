@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase } from 'lucide-react';
+import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase, Armchair } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SignatureCanvas from '@/components/entry/SignatureCanvas';
