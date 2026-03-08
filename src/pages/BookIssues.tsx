@@ -42,7 +42,7 @@ export default function BookIssues() {
 
   const [form, setForm] = useState({
     borrower_type: 'student', borrower_name: '', borrower_id: '',
-    borrower_department: '', issue_date: new Date().toISOString().split('T')[0],
+    borrower_department: '', borrower_phone: '', issue_date: new Date().toISOString().split('T')[0],
     return_date: '', fine_per_day: 5, notes: '',
   });
 
