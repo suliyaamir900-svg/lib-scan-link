@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase, Armchair } from 'lucide-react';
+import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, UserCircle, GraduationCap, Briefcase, Armchair, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SignatureCanvas from '@/components/entry/SignatureCanvas';
 import RepeatEntryDetector from '@/components/entry/RepeatEntryDetector';
+import { Badge } from '@/components/ui/badge';
 
 const DEFAULT_DEPARTMENTS = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'MBA', 'MCA', 'BCA', 'BBA', 'B.Sc', 'M.Sc', 'B.Com', 'M.Com', 'BA', 'MA', 'B.Pharma', 'Anatomy', 'Physiology', 'Homeopathy', 'Pharmacy', 'Arts', 'Science', 'Commerce'];
 
