@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Plus, Loader2, BookOpen, RotateCcw, AlertTriangle, ChevronLeft, ChevronRight, IndianRupee } from 'lucide-react';
+import { Search, Plus, Loader2, BookOpen, RotateCcw, AlertTriangle, ChevronLeft, ChevronRight, IndianRupee, BookPlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 15;
@@ -30,13 +30,22 @@ export default function BookIssues() {
   const [selectedIssue, setSelectedIssue] = useState<any>(null);
   const [saving, setSaving] = useState(false);
 
+  // Book search in issue dialog
+  const [bookSearch, setBookSearch] = useState('');
+  const [selectedBook, setSelectedBook] = useState<any>(null);
+  const [showBookDropdown, setShowBookDropdown] = useState(false);
+
+  // Quick add book
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickBookForm, setQuickBookForm] = useState({ title: '', author: '', total_copies: 1 });
+  const [quickAdding, setQuickAdding] = useState(false);
+
   const [form, setForm] = useState({
-    book_id: '', borrower_type: 'student', borrower_name: '', borrower_id: '',
+    borrower_type: 'student', borrower_name: '', borrower_id: '',
     borrower_department: '', issue_date: new Date().toISOString().split('T')[0],
-    return_date: '', fine_per_day: 5,
+    return_date: '', fine_per_day: 5, notes: '',
   });
 
-  // Borrower search for repeat issue
   const [borrowerQuery, setBorrowerQuery] = useState('');
   const [borrowerSearching, setBorrowerSearching] = useState(false);
 
@@ -47,8 +56,8 @@ export default function BookIssues() {
       setLibrary(lib);
       if (lib) {
         const [issuesRes, booksRes] = await Promise.all([
-          (supabase as any).from('book_issues').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
-          (supabase as any).from('books').select('*').eq('library_id', lib.id).order('title'),
+          supabase.from('book_issues').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
+          supabase.from('books').select('*').eq('library_id', lib.id).order('title'),
         ]);
         setIssues(issuesRes.data || []);
         setBooks(booksRes.data || []);
@@ -63,7 +72,6 @@ export default function BookIssues() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Calculate overdue for display
   const getStatus = (issue: any) => {
     if (issue.status === 'returned') return 'returned';
     if (issue.return_date < today) return 'overdue';
@@ -79,7 +87,8 @@ export default function BookIssues() {
 
   const filtered = issues.filter(i => {
     const q = search.toLowerCase();
-    const matchesSearch = !q || i.borrower_name.toLowerCase().includes(q) || i.borrower_id.toLowerCase().includes(q);
+    const bookTitle = books.find(b => b.id === i.book_id)?.title || '';
+    const matchesSearch = !q || i.borrower_name.toLowerCase().includes(q) || i.borrower_id.toLowerCase().includes(q) || bookTitle.toLowerCase().includes(q);
     const effectiveStatus = getStatus(i);
     const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;
     return matchesSearch && matchesStatus;
@@ -95,44 +104,84 @@ export default function BookIssues() {
 
   const getBookTitle = (bookId: string) => books.find(b => b.id === bookId)?.title || 'Unknown';
 
+  // Book search results
+  const bookSearchResults = useMemo(() => {
+    if (!bookSearch.trim()) return [];
+    const q = bookSearch.toLowerCase();
+    return books.filter(b =>
+      b.title.toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q) || (b.isbn || '').toLowerCase().includes(q)
+    ).slice(0, 8);
+  }, [bookSearch, books]);
+
+  const selectBook = (book: any) => {
+    setSelectedBook(book);
+    setBookSearch(book.title);
+    setShowBookDropdown(false);
+  };
+
   const searchBorrower = async () => {
     if (!borrowerQuery.trim() || !library) return;
     setBorrowerSearching(true);
-
-    if (form.borrower_type === 'student') {
-      const { data } = await (supabase as any).from('students').select('*').eq('library_id', library.id)
-        .or(`roll_number.eq.${borrowerQuery.trim()},enrollment_number.eq.${borrowerQuery.trim()}`).maybeSingle();
-      if (data) {
-        setForm(p => ({ ...p, borrower_name: data.name, borrower_id: data.roll_number || borrowerQuery.trim(), borrower_department: data.department }));
-        toast.success('Student found / छात्र मिला');
-      } else toast.info('Not found, enter manually');
-    } else {
-      const { data } = await (supabase as any).from('teachers').select('*').eq('library_id', library.id)
-        .eq('employee_id', borrowerQuery.trim()).maybeSingle();
-      if (data) {
-        setForm(p => ({ ...p, borrower_name: data.name, borrower_id: data.employee_id, borrower_department: data.department }));
-        toast.success('Teacher found / शिक्षक मिला');
-      } else toast.info('Not found, enter manually');
-    }
+    try {
+      if (form.borrower_type === 'student') {
+        const { data } = await supabase.from('student_entries').select('*').eq('library_id', library.id)
+          .eq('roll_number', borrowerQuery.trim()).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (data) {
+          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: data.roll_number, borrower_department: data.department }));
+          toast.success('छात्र मिला! / Student found!');
+        } else toast.info('Not found — enter manually');
+      } else {
+        const { data } = await supabase.from('student_entries').select('*').eq('library_id', library.id)
+          .eq('roll_number', borrowerQuery.trim()).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (data) {
+          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: borrowerQuery.trim(), borrower_department: data.department }));
+          toast.success('शिक्षक मिला! / Teacher found!');
+        } else toast.info('Not found — enter manually');
+      }
+    } catch { toast.info('Enter details manually'); }
     setBorrowerSearching(false);
   };
 
+  // Quick add book inline
+  const handleQuickAddBook = async () => {
+    if (!quickBookForm.title.trim() || !library) return;
+    setQuickAdding(true);
+    const { data, error } = await supabase.from('books').insert({
+      library_id: library.id,
+      title: quickBookForm.title.trim(),
+      author: quickBookForm.author.trim(),
+      total_copies: quickBookForm.total_copies,
+      available_copies: quickBookForm.total_copies,
+    }).select().single();
+
+    if (error) {
+      toast.error(`Failed: ${error.message}`);
+    } else {
+      setBooks(prev => [...prev, data].sort((a: any, b: any) => a.title.localeCompare(b.title)));
+      setSelectedBook(data);
+      setBookSearch(data.title);
+      setQuickAddOpen(false);
+      setQuickBookForm({ title: '', author: '', total_copies: 1 });
+      toast.success('✅ Book added! / किताब जोड़ दी गई!');
+    }
+    setQuickAdding(false);
+  };
+
   const handleIssue = async () => {
-    if (!form.book_id || !form.borrower_name.trim() || !form.borrower_id.trim() || !form.return_date) {
-      toast.error('Fill all required fields'); return;
+    if (!selectedBook || !form.borrower_name.trim() || !form.borrower_id.trim() || !form.return_date) {
+      toast.error('सभी ज़रूरी फ़ील्ड भरें / Fill all required fields'); return;
     }
     if (!library) return;
     setSaving(true);
 
-    const book = books.find(b => b.id === form.book_id);
-    if (book && book.available_copies <= 0) {
-      toast.error('No copies available / कोई प्रति उपलब्ध नहीं');
+    if (selectedBook.available_copies <= 0) {
+      toast.error('कोई प्रति उपलब्ध नहीं / No copies available');
       setSaving(false); return;
     }
 
-    const { data, error } = await (supabase as any).from('book_issues').insert({
+    const { data, error } = await supabase.from('book_issues').insert({
       library_id: library.id,
-      book_id: form.book_id,
+      book_id: selectedBook.id,
       borrower_type: form.borrower_type,
       borrower_name: form.borrower_name.trim(),
       borrower_id: form.borrower_id.trim(),
@@ -140,30 +189,31 @@ export default function BookIssues() {
       issue_date: form.issue_date,
       return_date: form.return_date,
       fine_per_day: form.fine_per_day,
+      notes: form.notes,
       status: 'issued',
     }).select().single();
 
-    if (!error && book) {
-      await (supabase as any).from('books').update({
-        available_copies: Math.max(0, book.available_copies - 1),
-      }).eq('id', book.id);
-      setBooks(prev => prev.map(b => b.id === book.id ? { ...b, available_copies: Math.max(0, b.available_copies - 1) } : b));
-    }
-
-    setSaving(false);
-    if (error) { toast.error('Failed to issue'); console.error(error); }
-    else {
+    if (!error) {
+      await supabase.from('books').update({
+        available_copies: Math.max(0, selectedBook.available_copies - 1),
+      }).eq('id', selectedBook.id);
+      setBooks(prev => prev.map(b => b.id === selectedBook.id ? { ...b, available_copies: Math.max(0, b.available_copies - 1) } : b));
       setIssues(prev => [data, ...prev]);
-      toast.success('Book issued / किताब जारी की गई');
+      toast.success('✅ किताब जारी की गई / Book issued!');
       setIssueDialogOpen(false);
-      setForm({ book_id: '', borrower_type: 'student', borrower_name: '', borrower_id: '', borrower_department: '', issue_date: today, return_date: '', fine_per_day: 5 });
-      setBorrowerQuery('');
+      resetIssueForm();
+    } else {
+      toast.error('Failed to issue');
+      console.error(error);
     }
+    setSaving(false);
   };
 
-  const openReturn = (issue: any) => {
-    setSelectedIssue(issue);
-    setReturnDialogOpen(true);
+  const resetIssueForm = () => {
+    setForm({ borrower_type: 'student', borrower_name: '', borrower_id: '', borrower_department: '', issue_date: today, return_date: '', fine_per_day: 5, notes: '' });
+    setSelectedBook(null);
+    setBookSearch('');
+    setBorrowerQuery('');
   };
 
   const handleReturn = async () => {
@@ -171,7 +221,7 @@ export default function BookIssues() {
     setSaving(true);
     const fine = calculateFine(selectedIssue);
 
-    const { error } = await (supabase as any).from('book_issues').update({
+    const { error } = await supabase.from('book_issues').update({
       status: 'returned',
       actual_return_date: today,
       fine_amount: fine,
@@ -181,13 +231,11 @@ export default function BookIssues() {
     if (!error) {
       const book = books.find(b => b.id === selectedIssue.book_id);
       if (book) {
-        await (supabase as any).from('books').update({
-          available_copies: book.available_copies + 1,
-        }).eq('id', book.id);
+        await supabase.from('books').update({ available_copies: book.available_copies + 1 }).eq('id', book.id);
         setBooks(prev => prev.map(b => b.id === book.id ? { ...b, available_copies: b.available_copies + 1 } : b));
       }
       setIssues(prev => prev.map(i => i.id === selectedIssue.id ? { ...i, status: 'returned', actual_return_date: today, fine_amount: fine } : i));
-      toast.success(`Returned${fine > 0 ? ` | Fine: ₹${fine}` : ''}`);
+      toast.success(`✅ वापसी हो गई${fine > 0 ? ` | जुर्माना: ₹${fine}` : ''}`);
     } else toast.error('Failed');
 
     setSaving(false);
@@ -196,33 +244,36 @@ export default function BookIssues() {
 
   const statusBadge = (issue: any) => {
     const s = getStatus(issue);
-    if (s === 'returned') return <Badge variant="secondary" className="bg-green-100 text-green-700">Returned</Badge>;
+    if (s === 'returned') return <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Returned</Badge>;
     if (s === 'overdue') return <Badge variant="destructive">Overdue</Badge>;
     return <Badge className="bg-primary/10 text-primary">Issued</Badge>;
   };
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <BookOpen className="h-6 w-6 text-primary" />
           Book Issues / किताब जारी
         </h1>
-        <Button size="sm" onClick={() => setIssueDialogOpen(true)} className="gradient-primary text-primary-foreground gap-1">
-          <Plus className="h-4 w-4" /> Issue Book
+        <Button size="sm" onClick={() => { resetIssueForm(); setIssueDialogOpen(true); }} className="gradient-primary text-primary-foreground gap-1 shadow-primary">
+          <Plus className="h-4 w-4" /> Issue Book / किताब जारी करें
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         {[
-          { label: 'Issued', value: issuedCount, color: 'text-primary' },
-          { label: 'Overdue', value: overdueCount, color: 'text-destructive' },
-          { label: 'Returned', value: returnedCount, color: 'text-green-600' },
-          { label: 'Total Fines', value: `₹${totalFines}`, color: 'text-orange-600' },
+          { label: 'Issued / जारी', value: issuedCount, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Overdue / विलंबित', value: overdueCount, color: 'text-destructive', bg: 'bg-destructive/10' },
+          { label: 'Returned / वापस', value: returnedCount, color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30' },
+          { label: 'Total Fines / कुल जुर्माना', value: `₹${totalFines}`, color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/30' },
         ].map((s, i) => (
-          <Card key={i} className="shadow-card">
+          <Card key={i} className="shadow-card border-border/50">
             <CardContent className="p-4 text-center">
+              <div className={`inline-flex h-10 w-10 rounded-lg ${s.bg} items-center justify-center mb-2`}>
+                <span className={`text-lg font-bold ${s.color}`}>{typeof s.value === 'number' ? s.value : ''}</span>
+              </div>
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-muted-foreground">{s.label}</p>
             </CardContent>
@@ -233,8 +284,8 @@ export default function BookIssues() {
       {overdueCount > 0 && (
         <Card className="shadow-card mb-4 border-destructive/30 bg-destructive/5">
           <CardContent className="p-4 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            <p className="text-sm font-medium text-destructive">{overdueCount} books overdue! / {overdueCount} किताबें वापसी की तारीख निकल गई!</p>
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+            <p className="text-sm font-medium text-destructive">⚠️ {overdueCount} books overdue! / {overdueCount} किताबें वापसी की तारीख निकल गई!</p>
           </CardContent>
         </Card>
       )}
@@ -245,17 +296,18 @@ export default function BookIssues() {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search borrower name, ID" className="pl-10" />
+              <Input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search borrower, book name / उधारकर्ता, किताब खोजें" className="pl-10" />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
               <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="issued">Issued</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-                <SelectItem value="returned">Returned</SelectItem>
+                <SelectItem value="all">All Status / सभी</SelectItem>
+                <SelectItem value="issued">Issued / जारी</SelectItem>
+                <SelectItem value="overdue">Overdue / विलंबित</SelectItem>
+                <SelectItem value="returned">Returned / वापस</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-sm text-muted-foreground self-center whitespace-nowrap">{filtered.length} records</p>
           </div>
         </CardContent>
       </Card>
@@ -265,34 +317,46 @@ export default function BookIssues() {
         {loading ? (
           <CardContent className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></CardContent>
         ) : filtered.length === 0 ? (
-          <CardContent className="p-10 text-center text-muted-foreground">No issues found</CardContent>
+          <CardContent className="p-12 text-center">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold mb-1">No issues found / कोई रिकॉर्ड नहीं</h3>
+            <p className="text-sm text-muted-foreground">Click "Issue Book" to issue a book / "किताब जारी करें" पर क्लिक करें</p>
+          </CardContent>
         ) : (
           <>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Book</TableHead>
-                    <TableHead>Borrower</TableHead>
+                    <TableHead>Book / किताब</TableHead>
+                    <TableHead>Borrower / उधारकर्ता</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Issue Date</TableHead>
-                    <TableHead>Return Date</TableHead>
+                    <TableHead>Due Date</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Fine</TableHead>
-                    <TableHead className="w-20"></TableHead>
+                    <TableHead>Fine / जुर्माना</TableHead>
+                    <TableHead className="w-24"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageIssues.map(issue => (
                     <TableRow key={issue.id} className={getStatus(issue) === 'overdue' ? 'bg-destructive/5' : ''}>
-                      <TableCell className="font-medium text-sm">{getBookTitle(issue.book_id)}</TableCell>
+                      <TableCell>
+                        <p className="font-medium text-sm">{getBookTitle(issue.book_id)}</p>
+                      </TableCell>
                       <TableCell>
                         <div>
                           <p className="text-sm font-medium">{issue.borrower_name}</p>
                           <p className="text-xs text-muted-foreground">{issue.borrower_id} {issue.borrower_department && `• ${issue.borrower_department}`}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="capitalize text-xs">{issue.borrower_type}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${issue.borrower_type === 'teacher' ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
+                          {issue.borrower_type === 'teacher' ? 'Teacher' : 'Student'}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-sm">{issue.issue_date}</TableCell>
                       <TableCell className="text-sm">{issue.return_date}</TableCell>
                       <TableCell>{statusBadge(issue)}</TableCell>
@@ -305,7 +369,7 @@ export default function BookIssues() {
                       </TableCell>
                       <TableCell>
                         {issue.status !== 'returned' && (
-                          <Button variant="outline" size="sm" onClick={() => openReturn(issue)} className="gap-1 text-xs">
+                          <Button variant="outline" size="sm" onClick={() => { setSelectedIssue(issue); setReturnDialogOpen(true); }} className="gap-1 text-xs">
                             <RotateCcw className="h-3 w-3" /> Return
                           </Button>
                         )}
@@ -332,23 +396,76 @@ export default function BookIssues() {
       <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Issue Book / किताब जारी करें</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <BookPlus className="h-5 w-5 text-primary" />
+              Issue Book / किताब जारी करें
+            </DialogTitle>
+            <DialogDescription>Search book by name, or add new if not found / किताब का नाम लिखकर खोजें</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Book Search with inline add */}
             <div className="space-y-2">
-              <Label>Select Book / किताब चुनें *</Label>
-              <Select value={form.book_id} onValueChange={v => setForm(p => ({ ...p, book_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Search and select book" /></SelectTrigger>
-                <SelectContent>
-                  {books.filter(b => b.available_copies > 0).map(b => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.title} — {b.author} ({b.available_copies} avail.)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="font-semibold">Book / किताब <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={bookSearch}
+                  onChange={e => {
+                    setBookSearch(e.target.value);
+                    setSelectedBook(null);
+                    setShowBookDropdown(true);
+                  }}
+                  onFocus={() => setShowBookDropdown(true)}
+                  placeholder="Type book name to search / किताब का नाम लिखें..."
+                  className="pl-10 h-11"
+                />
+                {selectedBook && (
+                  <button onClick={() => { setSelectedBook(null); setBookSearch(''); }} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  </button>
+                )}
+              </div>
+
+              {/* Dropdown results */}
+              {showBookDropdown && bookSearch.trim() && !selectedBook && (
+                <div className="border rounded-lg bg-card shadow-lg max-h-48 overflow-y-auto">
+                  {bookSearchResults.length > 0 ? (
+                    bookSearchResults.map(b => (
+                      <button key={b.id} onClick={() => selectBook(b)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-muted/50 border-b last:border-b-0 transition-colors">
+                        <p className="text-sm font-medium">{b.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {b.author && `${b.author} • `}{b.available_copies} available / उपलब्ध
+                        </p>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center">
+                      <p className="text-sm text-muted-foreground mb-2">No book found / किताब नहीं मिली</p>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setQuickBookForm({ title: bookSearch.trim(), author: '', total_copies: 1 });
+                        setQuickAddOpen(true);
+                        setShowBookDropdown(false);
+                      }} className="gap-1">
+                        <Plus className="h-3 w-3" /> Add "{bookSearch.trim()}" as new book
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedBook && (
+                <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20 text-sm flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-primary">{selectedBook.title}</p>
+                    <p className="text-xs text-muted-foreground">{selectedBook.author} • {selectedBook.available_copies} copies available</p>
+                  </div>
+                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Selected ✓</Badge>
+                </div>
+              )}
             </div>
 
+            {/* Borrower Type */}
             <div className="space-y-2">
               <Label>Borrower Type / उधारकर्ता</Label>
               <Select value={form.borrower_type} onValueChange={v => setForm(p => ({ ...p, borrower_type: v }))}>
@@ -360,11 +477,14 @@ export default function BookIssues() {
               </Select>
             </div>
 
-            {/* Repeat issue search */}
+            {/* Auto-fill */}
             <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
-              <Label className="text-xs text-muted-foreground">Auto-fill: Enter Roll No / Employee ID</Label>
+              <Label className="text-xs text-muted-foreground">Auto-fill: Roll No / Employee ID लिखें</Label>
               <div className="flex gap-2">
-                <Input value={borrowerQuery} onChange={e => setBorrowerQuery(e.target.value)} placeholder={form.borrower_type === 'student' ? 'Roll No' : 'Employee ID'} className="h-9 text-sm" onKeyDown={e => e.key === 'Enter' && searchBorrower()} />
+                <Input value={borrowerQuery} onChange={e => setBorrowerQuery(e.target.value)}
+                  placeholder={form.borrower_type === 'student' ? 'Roll No' : 'Employee ID'}
+                  className="h-9 text-sm"
+                  onKeyDown={e => e.key === 'Enter' && searchBorrower()} />
                 <Button variant="outline" size="sm" onClick={searchBorrower} disabled={borrowerSearching} className="h-9">
                   {borrowerSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
@@ -373,7 +493,7 @@ export default function BookIssues() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Borrower Name *</Label>
+                <Label>Borrower Name / नाम <span className="text-destructive">*</span></Label>
                 <Input value={form.borrower_name} onChange={e => setForm(p => ({ ...p, borrower_name: e.target.value }))} />
               </div>
               <div className="space-y-2">
@@ -383,30 +503,69 @@ export default function BookIssues() {
             </div>
 
             <div className="space-y-2">
-              <Label>Department</Label>
+              <Label>Department / विभाग</Label>
               <Input value={form.borrower_department} onChange={e => setForm(p => ({ ...p, borrower_department: e.target.value }))} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Issue Date *</Label>
+                <Label>Issue Date / जारी तिथि <span className="text-destructive">*</span></Label>
                 <Input type="date" value={form.issue_date} onChange={e => setForm(p => ({ ...p, issue_date: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>Return Date *</Label>
+                <Label>Return Date / वापसी तिथि <span className="text-destructive">*</span></Label>
                 <Input type="date" value={form.return_date} onChange={e => setForm(p => ({ ...p, return_date: e.target.value }))} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Fine per day (₹) / प्रतिदिन जुर्माना</Label>
-              <Input type="number" min={0} value={form.fine_per_day} onChange={e => setForm(p => ({ ...p, fine_per_day: parseFloat(e.target.value) || 0 }))} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Fine/day (₹) / प्रतिदिन जुर्माना</Label>
+                <Input type="number" min={0} value={form.fine_per_day} onChange={e => setForm(p => ({ ...p, fine_per_day: parseFloat(e.target.value) || 0 }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes / नोट्स</Label>
+                <Input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Optional" />
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleIssue} disabled={saving} className="gradient-primary text-primary-foreground">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Issue Book'}
+            <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>Cancel / रद्द</Button>
+            <Button onClick={handleIssue} disabled={saving || !selectedBook} className="gradient-primary text-primary-foreground shadow-primary">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : '✅ Issue Book / किताब जारी करें'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Add Book Dialog */}
+      <Dialog open={quickAddOpen} onOpenChange={setQuickAddOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookPlus className="h-5 w-5 text-primary" />
+              Quick Add Book / जल्दी किताब जोड़ें
+            </DialogTitle>
+            <DialogDescription>Add a new book and continue issuing / नई किताब जोड़ें और जारी करें</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Book Title / शीर्षक <span className="text-destructive">*</span></Label>
+              <Input value={quickBookForm.title} onChange={e => setQuickBookForm(p => ({ ...p, title: e.target.value }))} placeholder="Book name" autoFocus />
+            </div>
+            <div className="space-y-2">
+              <Label>Author / लेखक</Label>
+              <Input value={quickBookForm.author} onChange={e => setQuickBookForm(p => ({ ...p, author: e.target.value }))} placeholder="Author name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Total Copies / कुल प्रतियां</Label>
+              <Input type="number" min={1} value={quickBookForm.total_copies} onChange={e => setQuickBookForm(p => ({ ...p, total_copies: parseInt(e.target.value) || 1 }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQuickAddOpen(false)}>Cancel</Button>
+            <Button onClick={handleQuickAddBook} disabled={quickAdding || !quickBookForm.title.trim()} className="gradient-primary text-primary-foreground">
+              {quickAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : '✅ Add & Select'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -416,16 +575,16 @@ export default function BookIssues() {
       <Dialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Return Book / किताब वापसी</DialogTitle>
+            <DialogTitle>📖 Return Book / किताब वापसी</DialogTitle>
           </DialogHeader>
           {selectedIssue && (
             <div className="space-y-3">
-              <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-sm">
+              <div className="p-3 rounded-lg bg-muted/50 space-y-1.5 text-sm">
                 <p><span className="text-muted-foreground">Book:</span> <span className="font-medium">{getBookTitle(selectedIssue.book_id)}</span></p>
                 <p><span className="text-muted-foreground">Borrower:</span> <span className="font-medium">{selectedIssue.borrower_name}</span></p>
                 <p><span className="text-muted-foreground">Issue Date:</span> {selectedIssue.issue_date}</p>
                 <p><span className="text-muted-foreground">Due Date:</span> {selectedIssue.return_date}</p>
-                <p><span className="text-muted-foreground">Return Today:</span> {today}</p>
+                <p><span className="text-muted-foreground">Return Today:</span> <span className="font-medium text-primary">{today}</span></p>
               </div>
               {calculateFine(selectedIssue) > 0 && (
                 <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
@@ -441,7 +600,7 @@ export default function BookIssues() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleReturn} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Return'}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : '✅ Confirm Return / वापसी पक्की करें'}
             </Button>
           </DialogFooter>
         </DialogContent>
