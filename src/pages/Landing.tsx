@@ -114,7 +114,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t py-8 px-4">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          © 2026 {t('app.name')}. All rights reserved.
+          © {new Date().getFullYear()} S_Amir786. All rights reserved.
         </div>
       </footer>
     </div>

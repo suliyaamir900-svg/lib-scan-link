@@ -7,14 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, GraduationCap, Briefcase, Armchair, Megaphone, LogOut, Clock, Users } from 'lucide-react';
+import { BookOpen, Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, GraduationCap, Briefcase, Armchair, Megaphone, LogOut, Clock, Users, Lock, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SignatureCanvas from '@/components/entry/SignatureCanvas';
 import RepeatEntryDetector from '@/components/entry/RepeatEntryDetector';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 
 const DEFAULT_DEPARTMENTS = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'MBA', 'MCA', 'BCA', 'BBA', 'B.Sc', 'M.Sc', 'B.Com', 'M.Com', 'BA', 'MA', 'B.Pharma', 'Anatomy', 'Physiology', 'Homeopathy', 'Pharmacy', 'Arts', 'Science', 'Commerce'];
+const DEFAULT_YEARS = ['1st', '2nd', '3rd', '4th', '5th'];
 
 type LibrarySettings = {
   allow_seat_booking?: boolean;
@@ -26,13 +28,14 @@ export default function StudentEntry() {
   const { libraryId } = useParams<{ libraryId: string }>();
   const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [mode, setMode] = useState<'choose' | 'entry' | 'exit'>('choose');
+  const [mode, setMode] = useState<'entry' | 'exit'>('entry');
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [exitDone, setExitDone] = useState(false);
   const [exitData, setExitData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [libraryName, setLibraryName] = useState('');
+  const [collegeName, setCollegeName] = useState('');
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [libraryNotFound, setLibraryNotFound] = useState(false);
   const [customDept, setCustomDept] = useState('');
@@ -47,9 +50,16 @@ export default function StudentEntry() {
   const [libSettings, setLibSettings] = useState<LibrarySettings>({});
   const [queueCount, setQueueCount] = useState(0);
   const [joinedQueue, setJoinedQueue] = useState(false);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [years, setYears] = useState<string[]>([]);
+  const [lockers, setLockers] = useState<any[]>([]);
+  const [occupiedLockerIds, setOccupiedLockerIds] = useState<Set<string>>(new Set());
+  const [selectedLockerId, setSelectedLockerId] = useState<string>('');
+  const [visitPurpose, setVisitPurpose] = useState('');
 
   // Exit mode state
   const [exitQuery, setExitQuery] = useState('');
+  const [exitPhone, setExitPhone] = useState('');
   const [exitSearching, setExitSearching] = useState(false);
   const [activeEntry, setActiveEntry] = useState<any>(null);
 
@@ -79,24 +89,38 @@ export default function StudentEntry() {
         setLibraryLoading(false);
         return;
       }
-      setLibraryName(`${data.name} - ${data.college_name}`);
+      setLibraryName(data.name);
+      setCollegeName(data.college_name);
 
-      // Parallel fetches
       const today = new Date().toISOString().split('T')[0];
-      const [seatsRes, entriesRes, annRes, settingsRes, queueRes] = await Promise.all([
+      const [seatsRes, entriesRes, annRes, settingsRes, queueRes, deptRes, yearRes, lockerRes, lockerAssignRes] = await Promise.all([
         supabase.from('library_seats').select('*').eq('library_id', libraryId).eq('is_active', true).order('seat_number'),
         supabase.from('student_entries').select('seat_id').eq('library_id', libraryId).eq('entry_date', today).is('exit_time', null),
         supabase.from('announcements').select('*').eq('library_id', libraryId).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
         supabase.from('library_settings').select('allow_seat_booking, allow_queue, show_announcements_on_entry').eq('library_id', libraryId).maybeSingle(),
         supabase.from('seat_queue').select('id', { count: 'exact' }).eq('library_id', libraryId).eq('status', 'waiting'),
+        supabase.from('library_departments' as any).select('name').eq('library_id', libraryId).order('name'),
+        supabase.from('library_years' as any).select('name').eq('library_id', libraryId).order('name'),
+        supabase.from('library_lockers' as any).select('*').eq('library_id', libraryId).eq('is_active', true).order('locker_number'),
+        supabase.from('locker_assignments' as any).select('locker_id').eq('library_id', libraryId).eq('status', 'assigned'),
       ]);
 
       setSeats(seatsRes.data || []);
-      const occupied = new Set((entriesRes.data || []).filter(e => e.seat_id).map(e => e.seat_id));
+      const occupied = new Set((entriesRes.data || []).filter((e: any) => e.seat_id).map((e: any) => e.seat_id));
       setOccupiedSeatIds(occupied as Set<string>);
       setAnnouncements(annRes.data || []);
       setLibSettings(settingsRes.data || {});
       setQueueCount(queueRes.count || 0);
+
+      const deptNames = (deptRes.data || []).map((d: any) => d.name);
+      setDepartments(deptNames.length > 0 ? deptNames : DEFAULT_DEPARTMENTS);
+      const yearNames = (yearRes.data || []).map((y: any) => y.name);
+      setYears(yearNames.length > 0 ? yearNames : DEFAULT_YEARS);
+
+      setLockers(lockerRes.data || []);
+      const occLockers = new Set((lockerAssignRes.data || []).map((a: any) => a.locker_id));
+      setOccupiedLockerIds(occLockers as Set<string>);
+
       setLibraryLoading(false);
     };
     fetchLibrary();
@@ -139,19 +163,30 @@ export default function StudentEntry() {
 
   // ======== EXIT FLOW ========
   const handleExitSearch = async () => {
-    if (!exitQuery.trim() || !libraryId) return;
+    if (!libraryId) return;
+    if (!exitQuery.trim() && !exitPhone.trim()) {
+      toast.error('Enter Roll No or Phone / रोल नं या फोन डालें');
+      return;
+    }
     setExitSearching(true);
     const today = new Date().toISOString().split('T')[0];
-    const { data } = await supabase
+
+    let query = supabase
       .from('student_entries')
       .select('*')
       .eq('library_id', libraryId)
       .eq('entry_date', today)
-      .is('exit_time', null)
-      .or(`roll_number.eq.${exitQuery.trim()},employee_id.eq.${exitQuery.trim()}`)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .is('exit_time', null);
+
+    if (exitQuery.trim() && exitPhone.trim()) {
+      query = query.or(`roll_number.eq.${exitQuery.trim()},employee_id.eq.${exitQuery.trim()}`).eq('mobile', exitPhone.trim());
+    } else if (exitQuery.trim()) {
+      query = query.or(`roll_number.eq.${exitQuery.trim()},employee_id.eq.${exitQuery.trim()}`);
+    } else {
+      query = query.eq('mobile', exitPhone.trim());
+    }
+
+    const { data } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
 
     if (data) {
       setActiveEntry(data);
@@ -162,12 +197,11 @@ export default function StudentEntry() {
   };
 
   const handleMarkExit = async () => {
-    if (!activeEntry) return;
+    if (!activeEntry || !libraryId) return;
     setLoading(true);
     const now = new Date();
     const exitTime = now.toTimeString().split(' ')[0].substring(0, 5);
 
-    // Calculate study minutes
     const entryParts = activeEntry.entry_time.split(':');
     const entryMinutes = parseInt(entryParts[0]) * 60 + parseInt(entryParts[1]);
     const exitMinutes = now.getHours() * 60 + now.getMinutes();
@@ -178,9 +212,14 @@ export default function StudentEntry() {
       study_minutes: studyMins,
     }).eq('id', activeEntry.id);
 
-    // Free up seat - notify queue
-    if (!error && activeEntry.seat_id && libraryId) {
-      // Check queue and notify
+    // Release locker if assigned
+    if (!error && activeEntry.locker_id) {
+      await (supabase as any).from('locker_assignments').update({ status: 'released', released_at: now.toISOString() })
+        .eq('locker_id', activeEntry.locker_id).eq('status', 'assigned');
+    }
+
+    // Free seat - notify queue
+    if (!error && activeEntry.seat_id) {
       const { data: nextInQueue } = await supabase
         .from('seat_queue')
         .select('*')
@@ -189,9 +228,28 @@ export default function StudentEntry() {
         .order('queue_position', { ascending: true })
         .limit(1)
         .maybeSingle();
-
       if (nextInQueue) {
         await supabase.from('seat_queue').update({ status: 'notified' }).eq('id', nextInQueue.id);
+      }
+    }
+
+    // Update gamification points
+    if (!error) {
+      const rollOrEmp = activeEntry.roll_number || activeEntry.employee_id;
+      if (rollOrEmp) {
+        const { data: existingPoints } = await supabase
+          .from('student_points')
+          .select('*')
+          .eq('library_id', libraryId)
+          .eq('student_id', rollOrEmp)
+          .maybeSingle();
+        if (existingPoints) {
+          const newMins = (existingPoints.total_study_minutes || 0) + studyMins;
+          const newPoints = (existingPoints.total_points || 0) + Math.floor(studyMins / 30) + 2;
+          await supabase.from('student_points').update({
+            total_study_minutes: newMins, total_points: newPoints, updated_at: now.toISOString()
+          }).eq('id', existingPoints.id);
+        }
       }
     }
 
@@ -237,7 +295,7 @@ export default function StudentEntry() {
 
     setLoading(true);
     const dept = showCustomDept ? customDept.trim() : form.department;
-    const { error } = await supabase.from('student_entries').insert({
+    const { error, data: newEntry } = await supabase.from('student_entries').insert({
       library_id: libraryId,
       user_type: form.userType,
       student_name: form.fullName.trim(),
@@ -252,20 +310,46 @@ export default function StudentEntry() {
       device_info: navigator.userAgent,
       seat_id: selectedSeatId || null,
       signature_path: signature,
-    });
+      visit_purpose: visitPurpose.trim() || null,
+      locker_id: selectedLockerId || null,
+    } as any).select().single();
 
+    // Assign locker
+    if (!error && selectedLockerId && newEntry) {
+      await (supabase as any).from('locker_assignments').insert({
+        library_id: libraryId,
+        locker_id: selectedLockerId,
+        student_id: form.userType === 'student' ? form.rollNumber.trim() : form.employeeId.trim(),
+        student_name: form.fullName.trim(),
+      });
+    }
+
+    // Upsert gamification points
     if (!error) {
-      if (form.userType === 'student') {
-        await (supabase as any).from('students').upsert({
-          library_id: libraryId, name: form.fullName.trim(), department: dept, year: form.year,
-          roll_number: form.rollNumber.trim(), enrollment_number: form.enrollmentNumber.trim() || null,
-          phone: form.phone.trim(), email: form.email.trim() || null,
-        }, { onConflict: 'library_id,roll_number' });
+      const sid = form.userType === 'student' ? form.rollNumber.trim() : form.employeeId.trim();
+      const { data: existingPoints } = await supabase
+        .from('student_points')
+        .select('*')
+        .eq('library_id', libraryId)
+        .eq('student_id', sid)
+        .maybeSingle();
+      if (existingPoints) {
+        await supabase.from('student_points').update({
+          library_visits: (existingPoints.library_visits || 0) + 1,
+          total_points: (existingPoints.total_points || 0) + 5,
+          student_name: form.fullName.trim(),
+          department: dept,
+          updated_at: new Date().toISOString(),
+        }).eq('id', existingPoints.id);
       } else {
-        await (supabase as any).from('teachers').upsert({
-          library_id: libraryId, name: form.fullName.trim(), department: dept,
-          employee_id: form.employeeId.trim(), phone: form.phone.trim(), email: form.email.trim() || null,
-        }, { onConflict: 'library_id,employee_id' });
+        await supabase.from('student_points').insert({
+          library_id: libraryId,
+          student_id: sid,
+          student_name: form.fullName.trim(),
+          department: dept,
+          library_visits: 1,
+          total_points: 5,
+        });
       }
     }
 
@@ -290,7 +374,8 @@ export default function StudentEntry() {
   const allSeatsFull = seats.filter(s => s.is_active !== false).length <= occupiedSeatIds.size;
   const showQueue = libSettings.allow_queue !== false && allSeatsFull;
   const showAnnouncements = libSettings.show_announcements_on_entry !== false;
-  const filteredDepts = DEFAULT_DEPARTMENTS.filter(d => d.toLowerCase().includes(deptSearch.toLowerCase()));
+  const filteredDepts = departments.filter(d => d.toLowerCase().includes(deptSearch.toLowerCase()));
+  const hasLockers = lockers.length > 0;
 
   // Loading
   if (libraryLoading) {
@@ -314,6 +399,7 @@ export default function StudentEntry() {
             <p className="text-muted-foreground text-sm">Invalid QR code or library link. / अमान्य QR कोड या लाइब्रेरी लिंक।</p>
           </CardContent>
         </Card>
+        <Footer />
       </div>
     );
   }
@@ -333,12 +419,13 @@ export default function StudentEntry() {
               <Clock className="h-4 w-4" />
               <span>Study Time: <strong className="text-foreground">{exitData.studyTime}</strong></span>
             </div>
-            <p className="text-muted-foreground text-sm mb-4">{libraryName}</p>
-            <Button onClick={() => { setExitDone(false); setActiveEntry(null); setExitQuery(''); setMode('choose'); }} variant="outline">
+            <p className="text-muted-foreground text-sm mb-4">{libraryName} - {collegeName}</p>
+            <Button onClick={() => { setExitDone(false); setActiveEntry(null); setExitQuery(''); setExitPhone(''); setMode('entry'); }} variant="outline">
               Done / हो गया
             </Button>
           </CardContent>
         </Card>
+        <Footer />
       </div>
     );
   }
@@ -353,91 +440,24 @@ export default function StudentEntry() {
               <CheckCircle2 className="h-8 w-8 text-primary-foreground" />
             </div>
             <h2 className="text-xl font-bold mb-2">{t('entry.success')}</h2>
-            <p className="text-muted-foreground text-sm mb-4">{libraryName}</p>
+            <p className="text-muted-foreground text-sm mb-2">{libraryName} - {collegeName}</p>
             {selectedSeatId && (
-              <p className="text-sm mb-2">Seat: <strong>{seats.find(s => s.id === selectedSeatId)?.seat_number}</strong></p>
+              <p className="text-sm mb-1">Seat: <strong>{seats.find(s => s.id === selectedSeatId)?.seat_number}</strong></p>
             )}
+            {selectedLockerId && (
+              <p className="text-sm mb-1">Locker: <strong>{lockers.find((l: any) => l.id === selectedLockerId)?.locker_number}</strong></p>
+            )}
+            <p className="text-xs text-muted-foreground mt-2">Remember to mark your exit when leaving!</p>
             <Button onClick={() => {
-              setSubmitted(false); setStep(1); setAutoFilled(false); setMode('choose');
+              setSubmitted(false); setStep(1); setAutoFilled(false); setMode('entry');
               setForm({ userType: '', fullName: '', department: '', year: '', rollNumber: '', enrollmentNumber: '', employeeId: '', phone: '', email: '', idCard: '' });
-              setSelectedSeatId(''); clearSignature(); setJoinedQueue(false);
-            }} variant="outline" className="mt-2">
+              setSelectedSeatId(''); setSelectedLockerId(''); setVisitPurpose(''); clearSignature(); setJoinedQueue(false);
+            }} variant="outline" className="mt-4">
               Submit Another Entry / एक और एंट्री करें
             </Button>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  // ============ CHOOSE MODE ============
-  if (mode === 'choose') {
-    return (
-      <div className="min-h-screen py-6 px-4 bg-background">
-        <div className="absolute top-4 right-4"><LanguageToggle /></div>
-        <div className="max-w-lg mx-auto">
-          <Card className="shadow-card border-border/50">
-            <CardHeader className="text-center pb-2">
-              <div className="flex justify-center mb-3">
-                <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-primary-foreground" />
-                </div>
-              </div>
-              <CardTitle className="text-lg">{libraryName}</CardTitle>
-              <CardDescription>Library Entry & Exit System</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Announcements */}
-              {showAnnouncements && announcements.length > 0 && (
-                <div className="space-y-2">
-                  {announcements.map(a => (
-                    <div key={a.id} className="flex items-start gap-2 p-2.5 rounded-lg bg-accent/10 border border-accent/20">
-                      <Megaphone className="h-4 w-4 text-accent shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-accent">{a.title}</p>
-                        {a.message && <p className="text-[11px] text-muted-foreground leading-tight">{a.message}</p>}
-                      </div>
-                      <Badge variant="outline" className="text-[9px] shrink-0">{a.type}</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <p className="text-sm text-center text-muted-foreground">Select what you want to do / चुनें कि आप क्या करना चाहते हैं</p>
-
-              <div className="grid grid-cols-2 gap-4">
-                <button type="button" onClick={() => setMode('entry')}
-                  className="p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all flex flex-col items-center gap-3 hover:bg-primary/5">
-                  <BookOpen className="h-10 w-10 text-primary" />
-                  <span className="font-semibold text-sm">Entry / प्रवेश</span>
-                  <span className="text-[10px] text-muted-foreground">Mark your entry</span>
-                </button>
-                <button type="button" onClick={() => setMode('exit')}
-                  className="p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all flex flex-col items-center gap-3 hover:bg-primary/5">
-                  <LogOut className="h-10 w-10 text-primary" />
-                  <span className="font-semibold text-sm">Exit / बाहर</span>
-                  <span className="text-[10px] text-muted-foreground">Mark your exit</span>
-                </button>
-              </div>
-
-              {/* Quick stats */}
-              {seats.length > 0 && (
-                <div className="flex gap-3 justify-center text-xs text-muted-foreground pt-2">
-                  <span className="flex items-center gap-1">
-                    <Armchair className="h-3.5 w-3.5 text-green-500" />
-                    {Math.max(0, seats.length - occupiedSeatIds.size)} seats free
-                  </span>
-                  {queueCount > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5 text-orange-500" />
-                      {queueCount} in queue
-                    </span>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <Footer />
       </div>
     );
   }
@@ -456,23 +476,33 @@ export default function StudentEntry() {
                 </div>
               </div>
               <CardTitle className="text-lg">Mark Exit / एग्ज़िट दर्ज करें</CardTitle>
-              <CardDescription>{libraryName}</CardDescription>
+              <CardDescription>{libraryName} - {collegeName}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {!activeEntry ? (
                 <>
-                  <div className="space-y-2">
-                    <Label>Roll Number / Employee ID</Label>
-                    <Input value={exitQuery} onChange={e => setExitQuery(e.target.value)}
-                      placeholder="Enter your Roll No / Employee ID"
-                      onKeyDown={e => e.key === 'Enter' && handleExitSearch()} />
+                  <p className="text-xs text-center text-muted-foreground">Enter Roll No / Employee ID or Phone to find your entry</p>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Roll Number / Employee ID</Label>
+                      <Input value={exitQuery} onChange={e => setExitQuery(e.target.value)}
+                        placeholder="e.g. 2024001 or EMP001"
+                        onKeyDown={e => e.key === 'Enter' && handleExitSearch()} />
+                    </div>
+                    <div className="text-center text-xs text-muted-foreground">OR / या</div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Phone Number / फोन नंबर</Label>
+                      <Input value={exitPhone} onChange={e => setExitPhone(e.target.value)}
+                        placeholder="+91 98765 43210" type="tel"
+                        onKeyDown={e => e.key === 'Enter' && handleExitSearch()} />
+                    </div>
                   </div>
-                  <Button onClick={handleExitSearch} disabled={exitSearching || !exitQuery.trim()}
+                  <Button onClick={handleExitSearch} disabled={exitSearching || (!exitQuery.trim() && !exitPhone.trim())}
                     className="w-full gradient-primary text-primary-foreground h-11">
                     {exitSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Find My Entry / मेरी एंट्री खोजें'}
                   </Button>
-                  <Button variant="ghost" className="w-full" onClick={() => setMode('choose')}>
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Back / वापस
+                  <Button variant="ghost" className="w-full text-xs" onClick={() => setMode('entry')}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Back to Entry / एंट्री पर वापस
                   </Button>
                 </>
               ) : (
@@ -480,8 +510,10 @@ export default function StudentEntry() {
                   <div className="rounded-xl border bg-muted/30 p-4 space-y-2 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Name:</span><span className="font-medium">{activeEntry.student_name}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Department:</span><span className="font-medium">{activeEntry.department}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Roll/ID:</span><span className="font-medium">{activeEntry.roll_number}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Entry Time:</span><span className="font-medium">{activeEntry.entry_time?.substring(0, 5)}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Current Time:</span><span className="font-medium">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
+                    {activeEntry.seat_id && <div className="flex justify-between"><span className="text-muted-foreground">Seat:</span><span className="font-medium">{seats.find(s => s.id === activeEntry.seat_id)?.seat_number || '-'}</span></div>}
                   </div>
                   <Button onClick={handleMarkExit} disabled={loading}
                     className="w-full gradient-primary text-primary-foreground h-11 text-base">
@@ -489,13 +521,14 @@ export default function StudentEntry() {
                       <LogOut className="h-4 w-4 mr-2" /> Mark Exit / एग्ज़िट दर्ज करें
                     </>}
                   </Button>
-                  <Button variant="ghost" className="w-full" onClick={() => { setActiveEntry(null); setExitQuery(''); }}>
+                  <Button variant="ghost" className="w-full text-xs" onClick={() => { setActiveEntry(null); setExitQuery(''); setExitPhone(''); }}>
                     Search Again / फिर से खोजें
                   </Button>
                 </>
               )}
             </CardContent>
           </Card>
+          <Footer />
         </div>
       </div>
     );
@@ -506,6 +539,57 @@ export default function StudentEntry() {
     <div className="min-h-screen py-6 px-4 bg-background">
       <div className="absolute top-4 right-4"><LanguageToggle /></div>
       <div className="max-w-lg mx-auto">
+        {/* Header with Entry/Exit toggle */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Button
+            variant={mode === 'entry' ? 'default' : 'outline'}
+            size="sm"
+            className={mode === 'entry' ? 'gradient-primary text-primary-foreground' : ''}
+            onClick={() => setMode('entry')}
+          >
+            <BookOpen className="h-4 w-4 mr-1" /> Entry
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMode('exit')}
+          >
+            <LogOut className="h-4 w-4 mr-1" /> Exit
+          </Button>
+        </div>
+
+        {/* Announcements */}
+        {showAnnouncements && announcements.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {announcements.map(a => (
+              <div key={a.id} className="flex items-start gap-2 p-2.5 rounded-lg bg-accent/10 border border-accent/20">
+                <Megaphone className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-accent">{a.title}</p>
+                  {a.message && <p className="text-[11px] text-muted-foreground leading-tight">{a.message}</p>}
+                </div>
+                <Badge variant="outline" className="text-[9px] shrink-0">{a.type}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Quick stats */}
+        {seats.length > 0 && (
+          <div className="flex gap-3 justify-center text-xs text-muted-foreground mb-4">
+            <span className="flex items-center gap-1">
+              <Armchair className="h-3.5 w-3.5 text-green-500" />
+              {Math.max(0, seats.length - occupiedSeatIds.size)} seats free
+            </span>
+            {queueCount > 0 && (
+              <span className="flex items-center gap-1">
+                <Users className="h-3.5 w-3.5 text-orange-500" />
+                {queueCount} in queue
+              </span>
+            )}
+          </div>
+        )}
+
         <Card className="shadow-card border-border/50">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-3">
@@ -513,8 +597,8 @@ export default function StudentEntry() {
                 <BookOpen className="h-6 w-6 text-primary-foreground" />
               </div>
             </div>
-            <CardTitle className="text-lg">{t('entry.title')}</CardTitle>
-            <CardDescription>{libraryName}</CardDescription>
+            <CardTitle className="text-lg">{libraryName}</CardTitle>
+            <CardDescription>{collegeName}</CardDescription>
           </CardHeader>
           <CardContent>
             {/* Progress */}
@@ -548,14 +632,9 @@ export default function StudentEntry() {
                   <RepeatEntryDetector libraryId={libraryId} userType={form.userType} onDetected={handleRepeatDetected} />
                 )}
 
-                <div className="flex gap-3">
-                  <Button variant="ghost" className="h-11" onClick={() => setMode('choose')}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button className="flex-1 gradient-primary text-primary-foreground h-11" disabled={!canProceedStep2} onClick={() => setStep(2)}>
-                    Next / आगे <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
+                <Button className="w-full gradient-primary text-primary-foreground h-11" disabled={!canProceedStep2} onClick={() => setStep(2)}>
+                  Next / आगे <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
             )}
 
@@ -613,7 +692,7 @@ export default function StudentEntry() {
               </div>
             )}
 
-            {/* Step 3: Academic / Teacher + Seat Selection */}
+            {/* Step 3: Academic / Teacher + Seat + Locker + Purpose */}
             {step === 3 && (
               <div className="space-y-4">
                 {form.userType === 'student' ? (
@@ -624,7 +703,7 @@ export default function StudentEntry() {
                         <Select value={form.year} onValueChange={v => update('year', v)}>
                           <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                           <SelectContent>
-                            {['1st', '2nd', '3rd', '4th', '5th'].map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                            {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
@@ -648,6 +727,25 @@ export default function StudentEntry() {
                     <Input value={form.employeeId} onChange={e => update('employeeId', e.target.value)} placeholder="e.g. EMP001" />
                   </div>
                 )}
+
+                {/* Visit Purpose */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <MessageSquare className="h-4 w-4" /> Purpose (Optional) / उद्देश्य
+                  </Label>
+                  <Select value={visitPurpose} onValueChange={setVisitPurpose}>
+                    <SelectTrigger><SelectValue placeholder="Select or skip" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="study">📚 Study / पढ़ाई</SelectItem>
+                      <SelectItem value="project">💻 Project Work / प्रोजेक्ट</SelectItem>
+                      <SelectItem value="exam_prep">📝 Exam Preparation / परीक्षा तैयारी</SelectItem>
+                      <SelectItem value="research">🔬 Research / शोध</SelectItem>
+                      <SelectItem value="reading">📖 Reading / पठन</SelectItem>
+                      <SelectItem value="group_study">👥 Group Study / सामूहिक अध्ययन</SelectItem>
+                      <SelectItem value="other">🔹 Other / अन्य</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 {/* Seat Selection - Optional */}
                 {showSeatBooking && (
@@ -687,7 +785,7 @@ export default function StudentEntry() {
                           </Button>
                         )}
                         {joinedQueue && (
-                          <p className="text-xs text-primary">✅ You are in the queue! We'll notify you.</p>
+                          <p className="text-xs text-primary">✅ You are in the queue!</p>
                         )}
                         <p className="text-[10px] text-muted-foreground">You can still enter without a seat</p>
                       </div>
@@ -695,6 +793,35 @@ export default function StudentEntry() {
                     <div className="flex gap-3 text-[10px] text-muted-foreground">
                       <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-green-500" /> Free</span>
                       <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-destructive" /> Occupied</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Locker Selection - Optional */}
+                {hasLockers && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1">
+                      <Lock className="h-4 w-4" /> Locker (Optional) / लॉकर
+                    </Label>
+                    <div className="grid grid-cols-5 gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg">
+                      <button type="button" onClick={() => setSelectedLockerId('')}
+                        className={`text-[10px] p-1.5 rounded border transition-all ${!selectedLockerId ? 'border-primary bg-primary/10 font-bold' : 'border-border hover:border-primary/50'}`}>
+                        Skip
+                      </button>
+                      {lockers.map((l: any) => {
+                        const isOcc = occupiedLockerIds.has(l.id);
+                        return (
+                          <button key={l.id} type="button" disabled={isOcc}
+                            onClick={() => setSelectedLockerId(l.id)}
+                            className={`text-[10px] p-1.5 rounded border transition-all ${
+                              isOcc ? 'bg-destructive/10 text-destructive/50 cursor-not-allowed' :
+                              selectedLockerId === l.id ? 'border-primary bg-primary/10 font-bold text-primary' :
+                              'border-border hover:border-primary/50'
+                            }`}>
+                            {l.locker_number}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -750,9 +877,11 @@ export default function StudentEntry() {
                   )}
                   <div className="flex justify-between"><span className="text-muted-foreground">Phone:</span><span className="font-medium">{form.phone}</span></div>
                   {form.email && <div className="flex justify-between"><span className="text-muted-foreground">Email:</span><span className="font-medium">{form.email}</span></div>}
+                  {visitPurpose && <div className="flex justify-between"><span className="text-muted-foreground">Purpose:</span><span className="font-medium capitalize">{visitPurpose.replace('_', ' ')}</span></div>}
                   <div className="flex justify-between"><span className="text-muted-foreground">Date:</span><span className="font-medium">{new Date().toLocaleDateString('en-IN')}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Time:</span><span className="font-medium">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
                   {selectedSeatId && <div className="flex justify-between"><span className="text-muted-foreground">Seat:</span><span className="font-medium">{seats.find(s => s.id === selectedSeatId)?.seat_number || '-'}</span></div>}
+                  {selectedLockerId && <div className="flex justify-between"><span className="text-muted-foreground">Locker:</span><span className="font-medium">{lockers.find((l: any) => l.id === selectedLockerId)?.locker_number || '-'}</span></div>}
                   {signatureDataUrl && (
                     <div className="space-y-2 pt-2">
                       <span className="text-muted-foreground">Signature:</span>
@@ -772,7 +901,16 @@ export default function StudentEntry() {
             )}
           </CardContent>
         </Card>
+        <Footer />
       </div>
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <div className="text-center text-[10px] text-muted-foreground mt-6 pb-4">
+      © {new Date().getFullYear()} S_Amir786. All rights reserved.
     </div>
   );
 }
