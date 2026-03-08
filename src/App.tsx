@@ -34,6 +34,9 @@ import LibraryEvents from "./pages/LibraryEvents";
 import Gamification from "./pages/Gamification";
 import BookRecommendations from "./pages/BookRecommendations";
 import SeatHeatmap from "./pages/SeatHeatmap";
+import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
