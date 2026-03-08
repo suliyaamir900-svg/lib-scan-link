@@ -41,7 +41,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200
         lg:translate-x-0 lg:static lg:z-auto flex flex-col
