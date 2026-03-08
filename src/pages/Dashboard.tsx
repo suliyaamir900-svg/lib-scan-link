@@ -27,14 +27,16 @@ export default function Dashboard() {
       const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
       setLibrary(lib);
       if (lib) {
-        const [entRes, issRes, seatRes] = await Promise.all([
+        const [entRes, issRes, seatRes, annRes] = await Promise.all([
           supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
           supabase.from('book_issues').select('*').eq('library_id', lib.id),
           supabase.from('library_seats').select('*').eq('library_id', lib.id),
+          (supabase as any).from('announcements').select('*').eq('library_id', lib.id).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
         ]);
         setEntries(entRes.data || []);
         setIssues(issRes.data || []);
         setSeats(seatRes.data || []);
+        setAnnouncements(annRes.data || []);
       }
       setLoading(false);
     };
