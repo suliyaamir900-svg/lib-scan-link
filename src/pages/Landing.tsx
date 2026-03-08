@@ -112,9 +112,39 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8 px-4">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} S_Amir786. All rights reserved.
+      <footer className="border-t py-10 px-4">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div>
+              <h4 className="font-semibold text-sm mb-3">Product</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <Link to="/signup" className="block hover:text-foreground transition-colors">Get Started</Link>
+                <Link to="/login" className="block hover:text-foreground transition-colors">Login</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-3">Company</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <Link to="/about" className="block hover:text-foreground transition-colors">About Us</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-3">Legal</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <Link to="/privacy" className="block hover:text-foreground transition-colors">Privacy Policy</Link>
+                <Link to="/terms" className="block hover:text-foreground transition-colors">Terms of Service</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-3">Support</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <a href="mailto:support@smartlibraryentry.com" className="block hover:text-foreground transition-colors">Contact Us</a>
+              </div>
+            </div>
+          </div>
+          <div className="border-t pt-6 text-center text-xs text-muted-foreground">
+            © {new Date().getFullYear()} S_Amir786. All rights reserved. | Smart Library Entry v2.0
+          </div>
         </div>
       </footer>
     </div>

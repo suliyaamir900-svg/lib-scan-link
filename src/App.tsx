@@ -34,6 +34,9 @@ import LibraryEvents from "./pages/LibraryEvents";
 import Gamification from "./pages/Gamification";
 import BookRecommendations from "./pages/BookRecommendations";
 import SeatHeatmap from "./pages/SeatHeatmap";
+import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +78,9 @@ const App = () => (
               <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
               <Route path="/portal/:libraryId" element={<StudentPortal />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
