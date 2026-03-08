@@ -342,6 +342,59 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Fines & Announcements Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Active Fines */}
+            <Link to="/fines">
+              <Card className="shadow-card border-destructive/20 hover:border-destructive/40 transition-colors cursor-pointer">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <IndianRupee className="h-5 w-5 text-destructive" /> Active Fines / सक्रिय जुर्माना
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-3xl font-bold text-destructive">₹{totalFines}</p>
+                      <p className="text-sm text-muted-foreground">{overdueBooks} overdue books — fine increases daily!</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-muted-foreground">Per day rate</p>
+                      <p className="text-lg font-bold text-orange-600">₹{issues[0]?.fine_per_day || 5}/book</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Announcements */}
+            <Card className="shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Megaphone className="h-5 w-5 text-primary" /> Announcements / घोषणाएं
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {announcements.length === 0 ? (
+                  <p className="text-center text-muted-foreground text-sm py-6">No announcements / कोई घोषणा नहीं</p>
+                ) : (
+                  <div className="space-y-2">
+                    {announcements.slice(0, 4).map((a: any) => (
+                      <div key={a.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Megaphone className="h-3 w-3 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{a.title}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <Link to="/announcements" className="text-xs text-primary hover:underline">View all →</Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </>
       )}
     </DashboardLayout>
