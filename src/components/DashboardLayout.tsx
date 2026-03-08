@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -17,6 +17,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/students', icon: Users, label: t('nav.students') },
+    { to: '/teachers', icon: Briefcase, label: 'Teachers / शिक्षक' },
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
@@ -27,7 +28,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200
         lg:translate-x-0 lg:static lg:z-auto
@@ -62,10 +62,8 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Overlay */}
       {sidebarOpen && <div className="fixed inset-0 bg-foreground/20 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="h-16 border-b flex items-center justify-between px-4 bg-card">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
