@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Save, Loader2, Library, Building2, User, Phone, Mail, Lock, Armchair, BookOpen, Megaphone, Users } from 'lucide-react';
+import { Settings, Save, Loader2, Library, Building2, User, Phone, Mail, Lock, Armchair, BookOpen, Megaphone, Users, GraduationCap, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -29,6 +30,20 @@ export default function SettingsPage() {
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Departments & Years
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [years, setYears] = useState<{ id: string; name: string }[]>([]);
+  const [newDept, setNewDept] = useState('');
+  const [newYear, setNewYear] = useState('');
+  const [savingDept, setSavingDept] = useState(false);
+  const [savingYear, setSavingYear] = useState(false);
+
+  // Lockers
+  const [lockers, setLockers] = useState<any[]>([]);
+  const [newLockerStart, setNewLockerStart] = useState('');
+  const [newLockerCount, setNewLockerCount] = useState(1);
+  const [savingLockers, setSavingLockers] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
@@ -36,7 +51,15 @@ export default function SettingsPage() {
       setLibrary(data);
       if (data) {
         setForm({ name: data.name, college_name: data.college_name, admin_name: data.admin_name, phone: data.phone || '' });
-        let { data: s } = await supabase.from('library_settings').select('*').eq('library_id', data.id).maybeSingle();
+
+        const [settingsRes, deptRes, yearRes, lockerRes] = await Promise.all([
+          supabase.from('library_settings').select('*').eq('library_id', data.id).maybeSingle(),
+          (supabase as any).from('library_departments').select('*').eq('library_id', data.id).order('name'),
+          (supabase as any).from('library_years').select('*').eq('library_id', data.id).order('name'),
+          (supabase as any).from('library_lockers').select('*').eq('library_id', data.id).order('locker_number'),
+        ]);
+
+        let s = settingsRes.data;
         if (!s) {
           const { data: newS } = await supabase.from('library_settings').insert({ library_id: data.id }).select().single();
           s = newS;
@@ -52,6 +75,10 @@ export default function SettingsPage() {
             show_announcements_on_entry: (s as any).show_announcements_on_entry !== false,
           });
         }
+
+        setDepartments(deptRes.data || []);
+        setYears(yearRes.data || []);
+        setLockers(lockerRes.data || []);
       }
       setLoading(false);
     };
@@ -88,7 +115,7 @@ export default function SettingsPage() {
     } as any).eq('id', settings.id);
     setSavingSettings(false);
     if (error) toast.error('Failed to save');
-    else toast.success('Library settings saved! / लाइब्रेरी सेटिंग्स सेव!');
+    else toast.success('Settings saved!');
   };
 
   const handlePasswordChange = async () => {
@@ -99,6 +126,57 @@ export default function SettingsPage() {
     setChangingPassword(false);
     if (error) toast.error(error.message);
     else { toast.success('Password changed!'); setPasswordForm({ newPassword: '', confirmPassword: '' }); }
+  };
+
+  const addDepartment = async () => {
+    if (!newDept.trim() || !library) return;
+    setSavingDept(true);
+    const { data, error } = await (supabase as any).from('library_departments').insert({
+      library_id: library.id, name: newDept.trim()
+    }).select().single();
+    setSavingDept(false);
+    if (error) toast.error(error.message?.includes('duplicate') ? 'Already exists' : 'Failed');
+    else { setDepartments(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name))); setNewDept(''); toast.success('Added!'); }
+  };
+
+  const removeDepartment = async (id: string) => {
+    await (supabase as any).from('library_departments').delete().eq('id', id);
+    setDepartments(prev => prev.filter(d => d.id !== id));
+  };
+
+  const addYear = async () => {
+    if (!newYear.trim() || !library) return;
+    setSavingYear(true);
+    const { data, error } = await (supabase as any).from('library_years').insert({
+      library_id: library.id, name: newYear.trim()
+    }).select().single();
+    setSavingYear(false);
+    if (error) toast.error(error.message?.includes('duplicate') ? 'Already exists' : 'Failed');
+    else { setYears(prev => [...prev, data]); setNewYear(''); toast.success('Added!'); }
+  };
+
+  const removeYear = async (id: string) => {
+    await (supabase as any).from('library_years').delete().eq('id', id);
+    setYears(prev => prev.filter(y => y.id !== id));
+  };
+
+  const addLockers = async () => {
+    if (!newLockerStart.trim() || !library || newLockerCount < 1) return;
+    setSavingLockers(true);
+    const prefix = newLockerStart.trim();
+    const items = Array.from({ length: newLockerCount }, (_, i) => ({
+      library_id: library.id,
+      locker_number: newLockerCount === 1 ? prefix : `${prefix}${i + 1}`,
+    }));
+    const { data, error } = await (supabase as any).from('library_lockers').insert(items).select();
+    setSavingLockers(false);
+    if (error) toast.error('Failed to add lockers');
+    else { setLockers(prev => [...prev, ...(data || [])].sort((a: any, b: any) => a.locker_number.localeCompare(b.locker_number))); setNewLockerStart(''); toast.success('Lockers added!'); }
+  };
+
+  const removeLocker = async (id: string) => {
+    await (supabase as any).from('library_lockers').delete().eq('id', id);
+    setLockers(prev => prev.filter(l => l.id !== id));
   };
 
   return (
@@ -116,7 +194,6 @@ export default function SettingsPage() {
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="text-lg">Library Profile / लाइब्रेरी प्रोफ़ाइल</CardTitle>
-              <CardDescription>Basic library information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -147,12 +224,107 @@ export default function SettingsPage() {
           </Card>
 
           <div className="space-y-6">
-            {/* Capacity & Seats */}
+            {/* Departments */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Armchair className="h-5 w-5" /> Capacity & Seats
+                  <GraduationCap className="h-5 w-5" /> Departments / विभाग
                 </CardTitle>
+                <CardDescription>Students will see these departments in entry form</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {departments.map(d => (
+                    <Badge key={d.id} variant="secondary" className="text-xs gap-1 pr-1">
+                      {d.name}
+                      <button onClick={() => removeDepartment(d.id)} className="ml-1 hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {departments.length === 0 && <p className="text-xs text-muted-foreground">No departments added. Default list will be shown.</p>}
+                </div>
+                <div className="flex gap-2">
+                  <Input value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="e.g. Computer Science"
+                    onKeyDown={e => e.key === 'Enter' && addDepartment()} className="text-sm" />
+                  <Button size="sm" onClick={addDepartment} disabled={savingDept} variant="outline">
+                    {savingDept ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Years */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5" /> Years / वर्ष
+                </CardTitle>
+                <CardDescription>Configure available year options</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {years.map(y => (
+                    <Badge key={y.id} variant="secondary" className="text-xs gap-1 pr-1">
+                      {y.name}
+                      <button onClick={() => removeYear(y.id)} className="ml-1 hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {years.length === 0 && <p className="text-xs text-muted-foreground">No years added. Default (1st-5th) will be shown.</p>}
+                </div>
+                <div className="flex gap-2">
+                  <Input value={newYear} onChange={e => setNewYear(e.target.value)} placeholder="e.g. 1st Year"
+                    onKeyDown={e => e.key === 'Enter' && addYear()} className="text-sm" />
+                  <Button size="sm" onClick={addYear} disabled={savingYear} variant="outline">
+                    {savingYear ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lockers */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Lock className="h-5 w-5" /> Lockers / लॉकर
+                </CardTitle>
+                <CardDescription>Students can reserve lockers during entry</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {lockers.map((l: any) => (
+                    <Badge key={l.id} variant="outline" className="text-[10px] gap-1 pr-1">
+                      {l.locker_number}
+                      <button onClick={() => removeLocker(l.id)} className="hover:text-destructive">
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {lockers.length === 0 && <p className="text-xs text-muted-foreground">No lockers. Add to show on entry form.</p>}
+                </div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Prefix</Label>
+                    <Input value={newLockerStart} onChange={e => setNewLockerStart(e.target.value)} placeholder="e.g. L" className="text-sm" />
+                  </div>
+                  <div className="w-20 space-y-1">
+                    <Label className="text-xs">Count</Label>
+                    <Input type="number" min={1} max={100} value={newLockerCount}
+                      onChange={e => setNewLockerCount(parseInt(e.target.value) || 1)} className="text-sm" />
+                  </div>
+                  <Button size="sm" onClick={addLockers} disabled={savingLockers} variant="outline">
+                    {savingLockers ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Capacity & Seats */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><Armchair className="h-5 w-5" /> Capacity & Seats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -173,9 +345,7 @@ export default function SettingsPage() {
             {/* Book Issue Rules */}
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" /> Book Issue Rules
-                </CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2"><BookOpen className="h-5 w-5" /> Book Issue Rules</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -201,11 +371,11 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Student-facing Feature Toggles */}
+            {/* Entry Form Toggles */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5" /> Entry Form Options / एंट्री फ़ॉर्म विकल्प
+                  <Users className="h-5 w-5" /> Entry Form Options
                 </CardTitle>
                 <CardDescription>Control what students see on the entry form</CardDescription>
               </CardHeader>
@@ -213,7 +383,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div>
                     <p className="text-sm font-medium">Seat Booking / सीट बुकिंग</p>
-                    <p className="text-xs text-muted-foreground">Students can choose a seat during entry</p>
+                    <p className="text-xs text-muted-foreground">Students can choose a seat</p>
                   </div>
                   <Switch checked={settingsForm.allow_seat_booking}
                     onCheckedChange={v => setSettingsForm(p => ({ ...p, allow_seat_booking: v }))} />
@@ -228,8 +398,8 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div>
-                    <p className="text-sm font-medium flex items-center gap-1"><Megaphone className="h-3.5 w-3.5" /> Announcements on Entry</p>
-                    <p className="text-xs text-muted-foreground">Show announcements on entry form</p>
+                    <p className="text-sm font-medium flex items-center gap-1"><Megaphone className="h-3.5 w-3.5" /> Announcements</p>
+                    <p className="text-xs text-muted-foreground">Show on entry form</p>
                   </div>
                   <Switch checked={settingsForm.show_announcements_on_entry}
                     onCheckedChange={v => setSettingsForm(p => ({ ...p, show_announcements_on_entry: v }))} />
