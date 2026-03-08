@@ -19,7 +19,7 @@ import BookIssues from "./pages/BookIssues";
 import QRCodePage from "./pages/QRCode";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
-import SuperAdmin from "./pages/SuperAdmin";
+
 import StudentEntry from "./pages/StudentEntry";
 import StudentPortal from "./pages/StudentPortal";
 import SeatManagement from "./pages/SeatManagement";
