@@ -170,28 +170,36 @@ export default function StudentEntry() {
     }
     setExitSearching(true);
     const today = new Date().toISOString().split('T')[0];
+    const q = exitQuery.trim();
+    const p = exitPhone.trim();
 
-    let query = supabase
+    // Build OR filter parts
+    const orParts: string[] = [];
+    if (q) {
+      orParts.push(`roll_number.eq.${q}`);
+      orParts.push(`employee_id.eq.${q}`);
+      orParts.push(`student_name.ilike.%${q}%`);
+    }
+    if (p) {
+      orParts.push(`mobile.eq.${p}`);
+    }
+
+    const { data, error } = await supabase
       .from('student_entries')
       .select('*')
       .eq('library_id', libraryId)
       .eq('entry_date', today)
-      .is('exit_time', null);
-
-    if (exitQuery.trim() && exitPhone.trim()) {
-      query = query.or(`roll_number.eq.${exitQuery.trim()},employee_id.eq.${exitQuery.trim()}`).eq('mobile', exitPhone.trim());
-    } else if (exitQuery.trim()) {
-      query = query.or(`roll_number.eq.${exitQuery.trim()},employee_id.eq.${exitQuery.trim()}`);
-    } else {
-      query = query.eq('mobile', exitPhone.trim());
-    }
-
-    const { data } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+      .is('exit_time', null)
+      .or(orParts.join(','))
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (data) {
       setActiveEntry(data);
     } else {
       toast.error('No active entry found / कोई सक्रिय एंट्री नहीं मिली');
+      if (error) console.error('Exit search error:', error);
     }
     setExitSearching(false);
   };
