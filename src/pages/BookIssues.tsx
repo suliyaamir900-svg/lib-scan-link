@@ -67,6 +67,15 @@ export default function BookIssues() {
     fetchData();
   }, [user]);
 
+  // Book search results (must be before early returns)
+  const bookSearchResults = useMemo(() => {
+    if (!bookSearch.trim()) return [];
+    const q = bookSearch.toLowerCase();
+    return books.filter(b =>
+      b.title.toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q) || (b.isbn || '').toLowerCase().includes(q)
+    ).slice(0, 8);
+  }, [bookSearch, books]);
+
   if (authLoading) return null;
   if (!user) return <Navigate to="/login" />;
 
@@ -103,15 +112,6 @@ export default function BookIssues() {
   const totalFines = issues.reduce((s, i) => s + calculateFine(i), 0);
 
   const getBookTitle = (bookId: string) => books.find(b => b.id === bookId)?.title || 'Unknown';
-
-  // Book search results
-  const bookSearchResults = useMemo(() => {
-    if (!bookSearch.trim()) return [];
-    const q = bookSearch.toLowerCase();
-    return books.filter(b =>
-      b.title.toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q) || (b.isbn || '').toLowerCase().includes(q)
-    ).slice(0, 8);
-  }, [bookSearch, books]);
 
   const selectBook = (book: any) => {
     setSelectedBook(book);
