@@ -524,35 +524,44 @@ export type Database = {
       }
       library_settings: {
         Row: {
+          allow_queue: boolean | null
           allow_reservations: boolean | null
+          allow_seat_booking: boolean | null
           created_at: string | null
           default_fine_per_day: number | null
           default_issue_days: number | null
           id: string
           library_id: string
           max_capacity: number | null
+          show_announcements_on_entry: boolean | null
           total_seats: number | null
           updated_at: string | null
         }
         Insert: {
+          allow_queue?: boolean | null
           allow_reservations?: boolean | null
+          allow_seat_booking?: boolean | null
           created_at?: string | null
           default_fine_per_day?: number | null
           default_issue_days?: number | null
           id?: string
           library_id: string
           max_capacity?: number | null
+          show_announcements_on_entry?: boolean | null
           total_seats?: number | null
           updated_at?: string | null
         }
         Update: {
+          allow_queue?: boolean | null
           allow_reservations?: boolean | null
+          allow_seat_booking?: boolean | null
           created_at?: string | null
           default_fine_per_day?: number | null
           default_issue_days?: number | null
           id?: string
           library_id?: string
           max_capacity?: number | null
+          show_announcements_on_entry?: boolean | null
           total_seats?: number | null
           updated_at?: string | null
         }

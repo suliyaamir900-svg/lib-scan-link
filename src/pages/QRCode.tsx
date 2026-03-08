@@ -37,6 +37,7 @@ export default function QRCodePage() {
   if (!user) return <Navigate to="/login" />;
 
   const entryUrl = library ? `${window.location.origin}/entry/${library.id}` : '';
+  const portalUrl = library ? `${window.location.origin}/portal/${library.id}` : '';
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(entryUrl);
@@ -187,6 +188,23 @@ export default function QRCodePage() {
                 <Button onClick={handlePrint} variant="outline" className="w-full gap-2">
                   <Printer className="h-4 w-4" /> Print QR Poster / QR पोस्टर प्रिंट करें
                 </Button>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Student Portal / छात्र पोर्टल</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">Students can check their study hours, books, and achievements without login</p>
+                <div className="flex gap-2">
+                  <Input value={portalUrl} readOnly className="text-xs" />
+                  <Button onClick={async () => {
+                    await navigator.clipboard.writeText(portalUrl);
+                    toast.success('Portal link copied!');
+                  }} variant="outline" size="icon" className="shrink-0">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
