@@ -407,6 +407,37 @@ export default function StudentEntry() {
                   </>
                 )}
 
+                {/* Seat Selection */}
+                {seats.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1"><Armchair className="h-4 w-4" /> Select Seat / सीट चुनें (Optional)</Label>
+                    <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto p-2 border rounded-lg">
+                      <button type="button" onClick={() => setSelectedSeatId('')}
+                        className={`text-[10px] p-1.5 rounded border transition-all ${!selectedSeatId ? 'border-primary bg-primary/10 font-bold' : 'border-border hover:border-primary/50'}`}>
+                        None
+                      </button>
+                      {seats.map(s => {
+                        const isOccupied = occupiedSeatIds.has(s.id);
+                        return (
+                          <button key={s.id} type="button" disabled={isOccupied}
+                            onClick={() => setSelectedSeatId(s.id)}
+                            className={`text-[10px] p-1.5 rounded border transition-all ${
+                              isOccupied ? 'bg-destructive/10 text-destructive/50 cursor-not-allowed' :
+                              selectedSeatId === s.id ? 'border-primary bg-primary/10 font-bold text-primary' :
+                              'border-border hover:border-primary/50'
+                            }`}>
+                            {s.seat_number}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-3 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-green-500" /> Free</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-destructive" /> Occupied</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <Button variant="outline" className="flex-1 h-11" onClick={() => setStep(2)}>
                     <ChevronLeft className="h-4 w-4 mr-1" /> Back
