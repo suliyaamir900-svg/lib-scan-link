@@ -170,28 +170,36 @@ export default function StudentEntry() {
     }
     setExitSearching(true);
     const today = new Date().toISOString().split('T')[0];
+    const q = exitQuery.trim();
+    const p = exitPhone.trim();
 
-    let query = supabase
+    // Build OR filter parts
+    const orParts: string[] = [];
+    if (q) {
+      orParts.push(`roll_number.eq.${q}`);
+      orParts.push(`employee_id.eq.${q}`);
+      orParts.push(`student_name.ilike.%${q}%`);
+    }
+    if (p) {
+      orParts.push(`mobile.eq.${p}`);
+    }
+
+    const { data, error } = await supabase
       .from('student_entries')
       .select('*')
       .eq('library_id', libraryId)
       .eq('entry_date', today)
-      .is('exit_time', null);
-
-    if (exitQuery.trim() && exitPhone.trim()) {
-      query = query.or(`roll_number.eq.${exitQuery.trim()},employee_id.eq.${exitQuery.trim()}`).eq('mobile', exitPhone.trim());
-    } else if (exitQuery.trim()) {
-      query = query.or(`roll_number.eq.${exitQuery.trim()},employee_id.eq.${exitQuery.trim()}`);
-    } else {
-      query = query.eq('mobile', exitPhone.trim());
-    }
-
-    const { data } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+      .is('exit_time', null)
+      .or(orParts.join(','))
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (data) {
       setActiveEntry(data);
     } else {
       toast.error('No active entry found / कोई सक्रिय एंट्री नहीं मिली');
+      if (error) console.error('Exit search error:', error);
     }
     setExitSearching(false);
   };
@@ -481,19 +489,19 @@ export default function StudentEntry() {
             <CardContent className="space-y-4">
               {!activeEntry ? (
                 <>
-                  <p className="text-xs text-center text-muted-foreground">Enter Roll No / Employee ID or Phone to find your entry</p>
+                  <p className="text-xs text-center text-muted-foreground">Enter Roll No / Employee ID / Name or Phone to find your entry</p>
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Roll Number / Employee ID</Label>
+                      <Label className="text-xs">Roll No / Employee ID / Name</Label>
                       <Input value={exitQuery} onChange={e => setExitQuery(e.target.value)}
-                        placeholder="e.g. 2024001 or EMP001"
+                        placeholder="e.g. 2024001 or Amir"
                         onKeyDown={e => e.key === 'Enter' && handleExitSearch()} />
                     </div>
                     <div className="text-center text-xs text-muted-foreground">OR / या</div>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Phone Number / फोन नंबर</Label>
                       <Input value={exitPhone} onChange={e => setExitPhone(e.target.value)}
-                        placeholder="+91 98765 43210" type="tel"
+                        placeholder="98765 43210" type="tel"
                         onKeyDown={e => e.key === 'Enter' && handleExitSearch()} />
                     </div>
                   </div>
