@@ -78,6 +78,9 @@ const App = () => (
               <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
               <Route path="/portal/:libraryId" element={<StudentPortal />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
