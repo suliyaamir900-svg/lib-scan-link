@@ -58,6 +58,14 @@ export default function StudentEntry() {
         setLibraryNotFound(true);
       } else {
         setLibraryName(`${data.name} - ${data.college_name}`);
+        // Fetch seats
+        const { data: seatsData } = await supabase.from('library_seats').select('*').eq('library_id', libraryId).eq('is_active', true).order('seat_number');
+        setSeats(seatsData || []);
+        // Fetch today's entries to find occupied seats
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayEntries } = await supabase.from('student_entries').select('seat_id').eq('library_id', libraryId).eq('entry_date', today).is('exit_time', null);
+        const occupied = new Set((todayEntries || []).filter(e => e.seat_id).map(e => e.seat_id));
+        setOccupiedSeatIds(occupied as Set<string>);
       }
       setLibraryLoading(false);
     };
