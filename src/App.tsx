@@ -21,6 +21,7 @@ import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
 import SuperAdmin from "./pages/SuperAdmin";
 import StudentEntry from "./pages/StudentEntry";
+import StudentPortal from "./pages/StudentPortal";
 import SeatManagement from "./pages/SeatManagement";
 import SmartSearch from "./pages/SmartSearch";
 import Leaderboard from "./pages/Leaderboard";
@@ -30,7 +31,6 @@ import FineTracker from "./pages/FineTracker";
 import VisitorLog from "./pages/VisitorLog";
 import StudyRooms from "./pages/StudyRooms";
 import LibraryEvents from "./pages/LibraryEvents";
-
 import Gamification from "./pages/Gamification";
 import BookRecommendations from "./pages/BookRecommendations";
 import SeatHeatmap from "./pages/SeatHeatmap";
@@ -67,7 +67,6 @@ const App = () => (
               <Route path="/visitors" element={<VisitorLog />} />
               <Route path="/study-rooms" element={<StudyRooms />} />
               <Route path="/events" element={<LibraryEvents />} />
-              
               <Route path="/gamification" element={<Gamification />} />
               <Route path="/recommendations" element={<BookRecommendations />} />
               <Route path="/qr-code" element={<QRCodePage />} />
@@ -75,6 +74,7 @@ const App = () => (
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
+              <Route path="/portal/:libraryId" element={<StudentPortal />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
