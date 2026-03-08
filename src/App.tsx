@@ -23,6 +23,10 @@ import StudentEntry from "./pages/StudentEntry";
 import SeatManagement from "./pages/SeatManagement";
 import SmartSearch from "./pages/SmartSearch";
 import Leaderboard from "./pages/Leaderboard";
+import Announcements from "./pages/Announcements";
+import Notifications from "./pages/Notifications";
+import FineTracker from "./pages/FineTracker";
+import VisitorLog from "./pages/VisitorLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +57,10 @@ const App = () => (
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/super-admin" element={<SuperAdmin />} />
+              <Route path="/announcements" element={<Announcements />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/fines" element={<FineTracker />} />
+              <Route path="/visitors" element={<VisitorLog />} />
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

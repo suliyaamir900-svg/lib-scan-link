@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase, DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy } from 'lucide-react';
+import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase, DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy, Megaphone, IndianRupee } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Link } from 'react-router-dom';
 
 const COLORS = ['hsl(250, 80%, 60%)', 'hsl(200, 90%, 55%)', 'hsl(320, 75%, 55%)', 'hsl(30, 90%, 55%)', 'hsl(160, 70%, 45%)', 'hsl(0, 84%, 60%)'];
 
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const [entries, setEntries] = useState<any[]>([]);
   const [issues, setIssues] = useState<any[]>([]);
   const [seats, setSeats] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,14 +27,16 @@ export default function Dashboard() {
       const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
       setLibrary(lib);
       if (lib) {
-        const [entRes, issRes, seatRes] = await Promise.all([
+        const [entRes, issRes, seatRes, annRes] = await Promise.all([
           supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
           supabase.from('book_issues').select('*').eq('library_id', lib.id),
           supabase.from('library_seats').select('*').eq('library_id', lib.id),
+          (supabase as any).from('announcements').select('*').eq('library_id', lib.id).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
         ]);
         setEntries(entRes.data || []);
         setIssues(issRes.data || []);
         setSeats(seatRes.data || []);
+        setAnnouncements(annRes.data || []);
       }
       setLoading(false);
     };
@@ -59,6 +63,10 @@ export default function Dashboard() {
   const studentsInside = todayEntries.filter(e => (e.user_type || 'student') === 'student' && !e.exit_time).length;
   const teachersInside = todayEntries.filter(e => e.user_type === 'teacher' && !e.exit_time).length;
   const overdueBooks = issues.filter(i => i.status === 'issued' && i.return_date < today).length;
+  const totalFines = issues.filter(i => i.status === 'issued' && i.return_date < today).reduce((sum, i) => {
+    const days = Math.floor((new Date(today).getTime() - new Date(i.return_date).getTime()) / 86400000);
+    return sum + days * (i.fine_per_day || 5);
+  }, 0);
   const occupiedSeats = new Set(todayEntries.filter(e => e.seat_id && !e.exit_time).map(e => e.seat_id)).size;
 
   const stats = [
@@ -329,6 +337,59 @@ export default function Dashboard() {
                         <p className="text-[10px] text-muted-foreground">{entry.entry_time?.slice(0, 5)}</p>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Fines & Announcements Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Active Fines */}
+            <Link to="/fines">
+              <Card className="shadow-card border-destructive/20 hover:border-destructive/40 transition-colors cursor-pointer">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <IndianRupee className="h-5 w-5 text-destructive" /> Active Fines / सक्रिय जुर्माना
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-3xl font-bold text-destructive">₹{totalFines}</p>
+                      <p className="text-sm text-muted-foreground">{overdueBooks} overdue books — fine increases daily!</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-muted-foreground">Per day rate</p>
+                      <p className="text-lg font-bold text-orange-600">₹{issues[0]?.fine_per_day || 5}/book</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Announcements */}
+            <Card className="shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Megaphone className="h-5 w-5 text-primary" /> Announcements / घोषणाएं
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {announcements.length === 0 ? (
+                  <p className="text-center text-muted-foreground text-sm py-6">No announcements / कोई घोषणा नहीं</p>
+                ) : (
+                  <div className="space-y-2">
+                    {announcements.slice(0, 4).map((a: any) => (
+                      <div key={a.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                        <Megaphone className="h-3 w-3 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{a.title}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <Link to="/announcements" className="text-xs text-primary hover:underline">View all →</Link>
                   </div>
                 )}
               </CardContent>

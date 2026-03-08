@@ -42,7 +42,7 @@ export default function BookIssues() {
 
   const [form, setForm] = useState({
     borrower_type: 'student', borrower_name: '', borrower_id: '',
-    borrower_department: '', issue_date: new Date().toISOString().split('T')[0],
+    borrower_department: '', borrower_phone: '', issue_date: new Date().toISOString().split('T')[0],
     return_date: '', fine_per_day: 5, notes: '',
   });
 
@@ -127,14 +127,14 @@ export default function BookIssues() {
         const { data } = await supabase.from('student_entries').select('*').eq('library_id', library.id)
           .eq('roll_number', borrowerQuery.trim()).order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (data) {
-          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: data.roll_number, borrower_department: data.department }));
+          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: data.roll_number, borrower_department: data.department, borrower_phone: data.mobile || '' }));
           toast.success('छात्र मिला! / Student found!');
         } else toast.info('Not found — enter manually');
       } else {
         const { data } = await supabase.from('student_entries').select('*').eq('library_id', library.id)
           .eq('roll_number', borrowerQuery.trim()).order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (data) {
-          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: borrowerQuery.trim(), borrower_department: data.department }));
+          setForm(p => ({ ...p, borrower_name: data.student_name, borrower_id: borrowerQuery.trim(), borrower_department: data.department, borrower_phone: data.mobile || '' }));
           toast.success('शिक्षक मिला! / Teacher found!');
         } else toast.info('Not found — enter manually');
       }
@@ -186,6 +186,7 @@ export default function BookIssues() {
       borrower_name: form.borrower_name.trim(),
       borrower_id: form.borrower_id.trim(),
       borrower_department: form.borrower_department,
+      borrower_phone: form.borrower_phone,
       issue_date: form.issue_date,
       return_date: form.return_date,
       fine_per_day: form.fine_per_day,
@@ -210,7 +211,7 @@ export default function BookIssues() {
   };
 
   const resetIssueForm = () => {
-    setForm({ borrower_type: 'student', borrower_name: '', borrower_id: '', borrower_department: '', issue_date: today, return_date: '', fine_per_day: 5, notes: '' });
+    setForm({ borrower_type: 'student', borrower_name: '', borrower_id: '', borrower_department: '', borrower_phone: '', issue_date: today, return_date: '', fine_per_day: 5, notes: '' });
     setSelectedBook(null);
     setBookSearch('');
     setBorrowerQuery('');
@@ -502,9 +503,15 @@ export default function BookIssues() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Department / विभाग</Label>
-              <Input value={form.borrower_department} onChange={e => setForm(p => ({ ...p, borrower_department: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Department / विभाग</Label>
+                <Input value={form.borrower_department} onChange={e => setForm(p => ({ ...p, borrower_department: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone / फोन (for fine alerts)</Label>
+                <Input value={form.borrower_phone} onChange={e => setForm(p => ({ ...p, borrower_phone: e.target.value }))} type="tel" placeholder="+91 98765 43210" />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
