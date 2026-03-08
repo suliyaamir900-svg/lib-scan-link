@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy, Armchair, Search, Trophy, Bell, Megaphone, IndianRupee, UserPlus
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Shield, Briefcase, Library, BookCopy, Armchair, Search, Trophy, Bell, Megaphone, IndianRupee, UserPlus, DoorOpen, CalendarDays, FileDown, Award, Sparkles, BarChart3
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -22,11 +22,17 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/book-issues', icon: BookCopy, label: 'Issue/Return' },
     { to: '/fines', icon: IndianRupee, label: 'Fines / जुर्माना' },
     { to: '/seats', icon: Armchair, label: 'Seats / सीटें' },
+    { to: '/seat-heatmap', icon: BarChart3, label: 'Seat Heatmap' },
     { to: '/visitors', icon: UserPlus, label: 'Visitors / आगंतुक' },
+    { to: '/study-rooms', icon: DoorOpen, label: 'Study Rooms / कक्ष' },
+    { to: '/events', icon: CalendarDays, label: 'Events / इवेंट्स' },
+    { to: '/digital-library', icon: FileDown, label: 'Digital Library' },
+    { to: '/recommendations', icon: Sparkles, label: 'AI Suggestions' },
+    { to: '/gamification', icon: Award, label: 'Gamification / गेम' },
     { to: '/search', icon: Search, label: 'Search / खोज' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/announcements', icon: Megaphone, label: 'Announcements / घोषणा' },
-    { to: '/notifications', icon: Bell, label: 'Notifications / सूचना' },
+    { to: '/announcements', icon: Megaphone, label: 'Announcements' },
+    { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
@@ -51,14 +57,14 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <nav className="p-3 space-y-1 overflow-y-auto flex-1">
+        <nav className="p-3 space-y-0.5 overflow-y-auto flex-1">
           {navItems.map(item => (
             <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}>
               <div className={`
-                flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
                 ${isActive(item.to) ? 'gradient-primary text-primary-foreground shadow-primary' : 'text-muted-foreground hover:bg-muted'}
               `}>
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-3.5 w-3.5" />
                 {item.label}
               </div>
             </Link>
@@ -74,7 +80,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       {sidebarOpen && <div className="fixed inset-0 bg-foreground/20 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
       <div className="flex-1 flex flex-col min-h-screen lg:max-h-screen">
-        <header className="h-16 border-b flex items-center justify-between px-4 bg-card shrink-0">
+        <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
