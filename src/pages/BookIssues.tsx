@@ -211,7 +211,7 @@ export default function BookIssues() {
   };
 
   const resetIssueForm = () => {
-    setForm({ borrower_type: 'student', borrower_name: '', borrower_id: '', borrower_department: '', issue_date: today, return_date: '', fine_per_day: 5, notes: '' });
+    setForm({ borrower_type: 'student', borrower_name: '', borrower_id: '', borrower_department: '', borrower_phone: '', issue_date: today, return_date: '', fine_per_day: 5, notes: '' });
     setSelectedBook(null);
     setBookSearch('');
     setBorrowerQuery('');
