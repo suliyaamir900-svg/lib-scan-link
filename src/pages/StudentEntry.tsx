@@ -68,6 +68,9 @@ export default function StudentEntry() {
         const { data: todayEntries } = await supabase.from('student_entries').select('seat_id').eq('library_id', libraryId).eq('entry_date', today).is('exit_time', null);
         const occupied = new Set((todayEntries || []).filter(e => e.seat_id).map(e => e.seat_id));
         setOccupiedSeatIds(occupied as Set<string>);
+        // Fetch active announcements
+        const { data: annData } = await supabase.from('announcements').select('*').eq('library_id', libraryId).eq('is_active', true).order('created_at', { ascending: false }).limit(5);
+        setAnnouncements(annData || []);
       }
       setLibraryLoading(false);
     };
