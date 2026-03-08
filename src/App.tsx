@@ -66,7 +66,7 @@ const App = () => (
               <Route path="/visitors" element={<VisitorLog />} />
               <Route path="/study-rooms" element={<StudyRooms />} />
               <Route path="/events" element={<LibraryEvents />} />
-              <Route path="/digital-library" element={<DigitalResources />} />
+              
               <Route path="/gamification" element={<Gamification />} />
               <Route path="/recommendations" element={<BookRecommendations />} />
               <Route path="/qr-code" element={<QRCodePage />} />

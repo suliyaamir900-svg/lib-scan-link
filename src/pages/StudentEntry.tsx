@@ -249,6 +249,21 @@ export default function StudentEntry() {
             <CardDescription>{libraryName}</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Announcements */}
+            {announcements.length > 0 && (
+              <div className="mb-4 space-y-2">
+                {announcements.map(a => (
+                  <div key={a.id} className="flex items-start gap-2 p-2.5 rounded-lg bg-accent/10 border border-accent/20">
+                    <Megaphone className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-accent">{a.title}</p>
+                      {a.message && <p className="text-[11px] text-muted-foreground leading-tight">{a.message}</p>}
+                    </div>
+                    <Badge variant="outline" className="text-[9px] shrink-0">{a.type}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
             {/* Progress Bar */}
             <div className="flex items-center gap-1 mb-6">
               {Array.from({ length: totalSteps }, (_, i) => (

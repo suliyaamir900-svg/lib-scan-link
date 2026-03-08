@@ -78,7 +78,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       {sidebarOpen && <div className="fixed inset-0 bg-foreground/20 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="flex-1 flex flex-col min-h-screen lg:max-h-screen">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
