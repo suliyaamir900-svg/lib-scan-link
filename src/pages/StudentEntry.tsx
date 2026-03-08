@@ -550,7 +550,7 @@ export default function StudentEntry() {
             <BookOpen className="h-4 w-4 mr-1" /> Entry
           </Button>
           <Button
-            variant={mode === 'exit' ? 'default' : 'outline'}
+            variant="outline"
             size="sm"
             onClick={() => setMode('exit')}
           >
