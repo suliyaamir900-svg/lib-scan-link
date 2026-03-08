@@ -503,9 +503,15 @@ export default function BookIssues() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Department / विभाग</Label>
-              <Input value={form.borrower_department} onChange={e => setForm(p => ({ ...p, borrower_department: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Department / विभाग</Label>
+                <Input value={form.borrower_department} onChange={e => setForm(p => ({ ...p, borrower_department: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone / फोन (for fine alerts)</Label>
+                <Input value={form.borrower_phone} onChange={e => setForm(p => ({ ...p, borrower_phone: e.target.value }))} type="tel" placeholder="+91 98765 43210" />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
