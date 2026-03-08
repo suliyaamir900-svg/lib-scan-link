@@ -186,6 +186,7 @@ export default function BookIssues() {
       borrower_name: form.borrower_name.trim(),
       borrower_id: form.borrower_id.trim(),
       borrower_department: form.borrower_department,
+      borrower_phone: form.borrower_phone,
       issue_date: form.issue_date,
       return_date: form.return_date,
       fine_per_day: form.fine_per_day,
