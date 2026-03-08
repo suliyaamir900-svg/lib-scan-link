@@ -75,7 +75,7 @@ const App = () => (
               <Route path="/qr-code" element={<QRCodePage />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/super-admin" element={<SuperAdmin />} />
+              
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
               <Route path="/portal/:libraryId" element={<StudentPortal />} />
               <Route path="/about" element={<About />} />
