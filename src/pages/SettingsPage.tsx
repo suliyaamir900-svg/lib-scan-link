@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Save, Loader2, Library, Building2, User, Phone, Mail, Lock, Armchair, BookOpen, Bell } from 'lucide-react';
+import { Settings, Save, Loader2, Library, Building2, User, Phone, Mail, Lock, Armchair, BookOpen, Megaphone, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [settingsForm, setSettingsForm] = useState({
     total_seats: 0, max_capacity: 100, default_issue_days: 14,
     default_fine_per_day: 5, allow_reservations: true,
+    allow_seat_booking: true, allow_queue: true, show_announcements_on_entry: true,
   });
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [changingPassword, setChangingPassword] = useState(false);
@@ -35,7 +36,6 @@ export default function SettingsPage() {
       setLibrary(data);
       if (data) {
         setForm({ name: data.name, college_name: data.college_name, admin_name: data.admin_name, phone: data.phone || '' });
-        // Fetch or create settings
         let { data: s } = await supabase.from('library_settings').select('*').eq('library_id', data.id).maybeSingle();
         if (!s) {
           const { data: newS } = await supabase.from('library_settings').insert({ library_id: data.id }).select().single();
@@ -47,6 +47,9 @@ export default function SettingsPage() {
             total_seats: s.total_seats || 0, max_capacity: s.max_capacity || 100,
             default_issue_days: s.default_issue_days || 14, default_fine_per_day: s.default_fine_per_day || 5,
             allow_reservations: s.allow_reservations !== false,
+            allow_seat_booking: (s as any).allow_seat_booking !== false,
+            allow_queue: (s as any).allow_queue !== false,
+            show_announcements_on_entry: (s as any).show_announcements_on_entry !== false,
           });
         }
       }
@@ -67,8 +70,8 @@ export default function SettingsPage() {
       updated_at: new Date().toISOString(),
     }).eq('id', library.id);
     setSaving(false);
-    if (error) toast.error('Failed to save / सेव करने में विफल');
-    else toast.success('Settings saved! / सेटिंग्स सेव हो गईं!');
+    if (error) toast.error('Failed to save');
+    else toast.success('Settings saved! / सेटिंग्स सेव!');
   };
 
   const handleSaveSettings = async () => {
@@ -78,8 +81,11 @@ export default function SettingsPage() {
       total_seats: settingsForm.total_seats, max_capacity: settingsForm.max_capacity,
       default_issue_days: settingsForm.default_issue_days, default_fine_per_day: settingsForm.default_fine_per_day,
       allow_reservations: settingsForm.allow_reservations,
+      allow_seat_booking: settingsForm.allow_seat_booking,
+      allow_queue: settingsForm.allow_queue,
+      show_announcements_on_entry: settingsForm.show_announcements_on_entry,
       updated_at: new Date().toISOString(),
-    }).eq('id', settings.id);
+    } as any).eq('id', settings.id);
     setSavingSettings(false);
     if (error) toast.error('Failed to save');
     else toast.success('Library settings saved! / लाइब्रेरी सेटिंग्स सेव!');
@@ -140,23 +146,23 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Library Settings */}
           <div className="space-y-6">
+            {/* Capacity & Seats */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Armchair className="h-5 w-5" /> Capacity & Seats / क्षमता और सीटें
+                  <Armchair className="h-5 w-5" /> Capacity & Seats
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Total Seats / कुल सीटें</Label>
+                    <Label>Total Seats</Label>
                     <Input type="number" min={0} value={settingsForm.total_seats}
                       onChange={e => setSettingsForm(p => ({ ...p, total_seats: parseInt(e.target.value) || 0 }))} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Capacity / अधिकतम क्षमता</Label>
+                    <Label>Max Capacity</Label>
                     <Input type="number" min={0} value={settingsForm.max_capacity}
                       onChange={e => setSettingsForm(p => ({ ...p, max_capacity: parseInt(e.target.value) || 0 }))} />
                   </div>
@@ -164,39 +170,77 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
+            {/* Book Issue Rules */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" /> Book Issue Rules / किताब जारी नियम
+                  <BookOpen className="h-5 w-5" /> Book Issue Rules
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Default Issue Days / डिफ़ॉल्ट दिन</Label>
+                    <Label>Default Issue Days</Label>
                     <Input type="number" min={1} value={settingsForm.default_issue_days}
                       onChange={e => setSettingsForm(p => ({ ...p, default_issue_days: parseInt(e.target.value) || 14 }))} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Fine Per Day (₹) / जुर्माना प्रति दिन</Label>
+                    <Label>Fine Per Day (₹)</Label>
                     <Input type="number" min={0} value={settingsForm.default_fine_per_day}
                       onChange={e => setSettingsForm(p => ({ ...p, default_fine_per_day: parseFloat(e.target.value) || 0 }))} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div>
-                    <p className="text-sm font-medium">Allow Reservations / आरक्षण</p>
-                    <p className="text-xs text-muted-foreground">Students can reserve books in queue</p>
+                    <p className="text-sm font-medium">Allow Reservations</p>
+                    <p className="text-xs text-muted-foreground">Students can reserve books</p>
                   </div>
                   <Switch checked={settingsForm.allow_reservations}
                     onCheckedChange={v => setSettingsForm(p => ({ ...p, allow_reservations: v }))} />
                 </div>
-                <Button onClick={handleSaveSettings} disabled={savingSettings} className="w-full gradient-primary text-primary-foreground gap-2">
-                  {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Save Settings / सेटिंग्स सेव करें
-                </Button>
               </CardContent>
             </Card>
+
+            {/* Student-facing Feature Toggles */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" /> Entry Form Options / एंट्री फ़ॉर्म विकल्प
+                </CardTitle>
+                <CardDescription>Control what students see on the entry form</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <p className="text-sm font-medium">Seat Booking / सीट बुकिंग</p>
+                    <p className="text-xs text-muted-foreground">Students can choose a seat during entry</p>
+                  </div>
+                  <Switch checked={settingsForm.allow_seat_booking}
+                    onCheckedChange={v => setSettingsForm(p => ({ ...p, allow_seat_booking: v }))} />
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <p className="text-sm font-medium">Waiting Queue / प्रतीक्षा कतार</p>
+                    <p className="text-xs text-muted-foreground">Queue when all seats are full</p>
+                  </div>
+                  <Switch checked={settingsForm.allow_queue}
+                    onCheckedChange={v => setSettingsForm(p => ({ ...p, allow_queue: v }))} />
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <p className="text-sm font-medium flex items-center gap-1"><Megaphone className="h-3.5 w-3.5" /> Announcements on Entry</p>
+                    <p className="text-xs text-muted-foreground">Show announcements on entry form</p>
+                  </div>
+                  <Switch checked={settingsForm.show_announcements_on_entry}
+                    onCheckedChange={v => setSettingsForm(p => ({ ...p, show_announcements_on_entry: v }))} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button onClick={handleSaveSettings} disabled={savingSettings} className="w-full gradient-primary text-primary-foreground gap-2">
+              {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save All Settings / सब सेटिंग्स सेव करें
+            </Button>
 
             {/* Change Password */}
             <Card className="shadow-card">
