@@ -213,6 +213,53 @@ export type Database = {
           },
         ]
       }
+      book_suggestions: {
+        Row: {
+          admin_notes: string | null
+          author: string | null
+          created_at: string
+          id: string
+          library_id: string
+          reason: string | null
+          status: string
+          suggested_by_id: string
+          suggested_by_name: string
+          title: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          author?: string | null
+          created_at?: string
+          id?: string
+          library_id: string
+          reason?: string | null
+          status?: string
+          suggested_by_id: string
+          suggested_by_name: string
+          title: string
+        }
+        Update: {
+          admin_notes?: string | null
+          author?: string | null
+          created_at?: string
+          id?: string
+          library_id?: string
+          reason?: string | null
+          status?: string
+          suggested_by_id?: string
+          suggested_by_name?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_suggestions_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       books: {
         Row: {
           author: string
@@ -431,6 +478,35 @@ export type Database = {
         }
         Relationships: []
       }
+      library_departments: {
+        Row: {
+          created_at: string
+          id: string
+          library_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          library_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          library_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_departments_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       library_events: {
         Row: {
           created_at: string
@@ -480,6 +556,79 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "library_events_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_feedback: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          library_id: string
+          message: string | null
+          rating: number
+          student_id: string
+          student_name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          library_id: string
+          message?: string | null
+          rating?: number
+          student_id: string
+          student_name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          library_id?: string
+          message?: string | null
+          rating?: number
+          student_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_feedback_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_lockers: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean
+          library_id: string
+          locker_number: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          library_id: string
+          locker_number: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          library_id?: string
+          locker_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_lockers_library_id_fkey"
             columns: ["library_id"]
             isOneToOne: false
             referencedRelation: "libraries"
@@ -571,6 +720,83 @@ export type Database = {
             columns: ["library_id"]
             isOneToOne: true
             referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_years: {
+        Row: {
+          created_at: string
+          id: string
+          library_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          library_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          library_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_years_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locker_assignments: {
+        Row: {
+          assigned_at: string
+          id: string
+          library_id: string
+          locker_id: string
+          released_at: string | null
+          status: string
+          student_id: string
+          student_name: string
+        }
+        Insert: {
+          assigned_at?: string
+          id?: string
+          library_id: string
+          locker_id: string
+          released_at?: string | null
+          status?: string
+          student_id: string
+          student_name: string
+        }
+        Update: {
+          assigned_at?: string
+          id?: string
+          library_id?: string
+          locker_id?: string
+          released_at?: string | null
+          status?: string
+          student_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locker_assignments_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locker_assignments_locker_id_fkey"
+            columns: ["locker_id"]
+            isOneToOne: false
+            referencedRelation: "library_lockers"
             referencedColumns: ["id"]
           },
         ]
@@ -729,6 +955,7 @@ export type Database = {
           id_card_number: string | null
           ip_address: string | null
           library_id: string
+          locker_id: string | null
           mobile: string
           roll_number: string
           seat_id: string | null
@@ -736,6 +963,7 @@ export type Database = {
           student_name: string
           study_minutes: number | null
           user_type: string | null
+          visit_purpose: string | null
           year: string
         }
         Insert: {
@@ -752,6 +980,7 @@ export type Database = {
           id_card_number?: string | null
           ip_address?: string | null
           library_id: string
+          locker_id?: string | null
           mobile: string
           roll_number: string
           seat_id?: string | null
@@ -759,6 +988,7 @@ export type Database = {
           student_name: string
           study_minutes?: number | null
           user_type?: string | null
+          visit_purpose?: string | null
           year: string
         }
         Update: {
@@ -775,6 +1005,7 @@ export type Database = {
           id_card_number?: string | null
           ip_address?: string | null
           library_id?: string
+          locker_id?: string | null
           mobile?: string
           roll_number?: string
           seat_id?: string | null
@@ -782,6 +1013,7 @@ export type Database = {
           student_name?: string
           study_minutes?: number | null
           user_type?: string | null
+          visit_purpose?: string | null
           year?: string
         }
         Relationships: [
@@ -790,6 +1022,13 @@ export type Database = {
             columns: ["library_id"]
             isOneToOne: false
             referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_entries_locker_id_fkey"
+            columns: ["locker_id"]
+            isOneToOne: false
+            referencedRelation: "library_lockers"
             referencedColumns: ["id"]
           },
         ]
