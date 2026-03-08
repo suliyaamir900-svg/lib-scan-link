@@ -36,10 +36,9 @@ export default function Students() {
       const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
       setLibrary(lib);
       if (lib) {
-        const { data } = await supabase.from('student_entries').select('*').eq('library_id', lib.id).in('user_type', ['student']).order('created_at', { ascending: false });
-        // Also get legacy entries without user_type
-        const { data: legacy } = await supabase.from('student_entries').select('*').eq('library_id', lib.id).is('user_type', null).order('created_at', { ascending: false });
-        setEntries([...(data || []), ...(legacy || [])]);
+        // Get student entries (user_type = 'student' or default/legacy)
+        const { data } = await supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false });
+        setEntries((data || []).filter((e: any) => !e.user_type || e.user_type === 'student'));
       }
       setLoading(false);
     };

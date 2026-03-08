@@ -20,7 +20,8 @@ export default function RepeatEntryDetector({ libraryId, userType, onDetected }:
     setSearching(true);
 
     if (userType === 'student') {
-      const { data } = await supabase
+      // Search from students table
+      const { data } = await (supabase as any)
         .from('students')
         .select('*')
         .eq('library_id', libraryId)
@@ -30,7 +31,7 @@ export default function RepeatEntryDetector({ libraryId, userType, onDetected }:
       if (data) {
         onDetected(data);
       } else {
-        // Try from entries
+        // Fallback: search from entries
         const { data: entry } = await supabase
           .from('student_entries')
           .select('*')
@@ -43,7 +44,7 @@ export default function RepeatEntryDetector({ libraryId, userType, onDetected }:
         if (entry) onDetected(entry);
       }
     } else {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('teachers')
         .select('*')
         .eq('library_id', libraryId)

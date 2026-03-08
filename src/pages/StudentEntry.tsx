@@ -123,7 +123,7 @@ export default function StudentEntry() {
     // Auto-register in students/teachers table
     if (!error) {
       if (form.userType === 'student') {
-        await supabase.from('students').upsert({
+        await (supabase as any).from('students').upsert({
           library_id: libraryId,
           name: form.fullName.trim(),
           department: dept,
@@ -134,7 +134,7 @@ export default function StudentEntry() {
           email: form.email.trim() || null,
         }, { onConflict: 'library_id,roll_number' });
       } else {
-        await supabase.from('teachers').upsert({
+        await (supabase as any).from('teachers').upsert({
           library_id: libraryId,
           name: form.fullName.trim(),
           department: dept,

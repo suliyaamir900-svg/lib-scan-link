@@ -30,8 +30,8 @@ export default function Teachers() {
       const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
       setLibrary(lib);
       if (lib) {
-        const { data } = await supabase.from('student_entries').select('*').eq('library_id', lib.id).eq('user_type', 'teacher').order('created_at', { ascending: false });
-        setEntries(data || []);
+        const { data } = await supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false });
+        setEntries((data || []).filter((e: any) => e.user_type === 'teacher'));
       }
       setLoading(false);
     };
