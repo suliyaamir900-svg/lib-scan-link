@@ -34,6 +34,7 @@ export default function StudentEntry() {
   const [occupiedSeatIds, setOccupiedSeatIds] = useState<Set<string>>(new Set());
   const [selectedSeatId, setSelectedSeatId] = useState<string>('');
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     userType: '' as 'student' | 'teacher' | '',
@@ -97,23 +98,30 @@ export default function StudentEntry() {
 
   const clearSignature = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    if (canvas) {
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    setSignatureDataUrl(null);
   };
 
-  const isCanvasBlank = () => {
+  const getSignatureDataUrl = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return true;
+    if (!canvas) return null;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return true;
+    if (!ctx) return null;
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    return !pixels.some((ch, i) => i % 4 === 3 && ch !== 0);
+    const hasInk = pixels.some((ch, i) => i % 4 === 3 && ch !== 0);
+    if (!hasInk) return null;
+    return canvas.toDataURL('image/png');
   };
 
   const handleSubmit = async () => {
     if (!libraryId) return;
-    if (isCanvasBlank()) {
+
+    const signature = signatureDataUrl ?? getSignatureDataUrl();
+    if (!signature) {
       toast.error('Please provide your signature / कृपया हस्ताक्षर करें');
+      setStep(4);
       return;
     }
 
@@ -135,6 +143,7 @@ export default function StudentEntry() {
       id_card_number: form.idCard.trim() || null,
       device_info: navigator.userAgent,
       seat_id: selectedSeatId || null,
+      signature_path: signature,
     });
 
     // Auto-register in students/teachers table
