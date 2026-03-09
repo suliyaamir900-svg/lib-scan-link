@@ -36,8 +36,16 @@ export default function StudentEntry() {
   const [loading, setLoading] = useState(false);
   const [libraryName, setLibraryName] = useState('');
   const [collegeName, setCollegeName] = useState('');
+  const [libraryType, setLibraryType] = useState<string>('college');
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [libraryNotFound, setLibraryNotFound] = useState(false);
+  
+  // Quick entry for college libraries
+  const [quickSearchQuery, setQuickSearchQuery] = useState('');
+  const [quickSearchResults, setQuickSearchResults] = useState<any[]>([]);
+  const [quickSearching, setQuickSearching] = useState(false);
+  const [quickEntryMode, setQuickEntryMode] = useState(true); // default for college
+  const [quickSubmitting, setQuickSubmitting] = useState(false);
   const [customDept, setCustomDept] = useState('');
   const [deptSearch, setDeptSearch] = useState('');
   const [showCustomDept, setShowCustomDept] = useState(false);
