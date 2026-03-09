@@ -744,6 +744,84 @@ export default function StudentEntry() {
           </div>
         )}
 
+        {/* QUICK ENTRY FOR COLLEGE LIBRARIES */}
+        {(libraryType === 'college') && quickEntryMode && (
+          <Card className="shadow-card border-border/50 mb-4">
+            <CardHeader className="text-center pb-2">
+              <div className="flex justify-center mb-3">
+                <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
+                  <BookOpen className="h-6 w-6 text-primary-foreground" />
+                </div>
+              </div>
+              <CardTitle className="text-lg">{libraryName}</CardTitle>
+              <CardDescription>{collegeName}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm font-medium text-center">Quick Entry / त्वरित एंट्री</p>
+              <p className="text-xs text-center text-muted-foreground">
+                Search your name, enrollment number, or phone / अपना नाम, नामांकन नंबर, या फोन खोजें
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={quickSearchQuery}
+                  onChange={e => setQuickSearchQuery(e.target.value)}
+                  placeholder="Name / Enrollment / Phone"
+                  className="h-10"
+                  onKeyDown={e => e.key === 'Enter' && handleQuickSearch()}
+                />
+                <Button onClick={handleQuickSearch} disabled={quickSearching || !quickSearchQuery.trim()} className="gradient-primary text-primary-foreground h-10 px-4">
+                  {quickSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔍'}
+                </Button>
+              </div>
+
+              {quickSearchResults.length > 0 && (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {quickSearchResults.map((p: any) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      disabled={quickSubmitting}
+                      onClick={() => handleQuickSubmit(p)}
+                      className="w-full p-3 rounded-xl border-2 border-border hover:border-primary/60 transition-all flex items-center gap-3 text-left bg-card"
+                    >
+                      {p.photo_url ? (
+                        <img src={p.photo_url} alt="" className="h-10 w-10 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                          {p.full_name?.charAt(0)?.toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm truncate">{p.full_name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {p._type === 'student'
+                            ? `${p.enrollment_number || p.roll_number || ''} • ${p.department || ''}`
+                            : `${p.employee_id || ''} • ${p.department || ''} • Teacher`}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-[9px] shrink-0 capitalize">{p._type}</Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {quickSubmitting && (
+                <div className="flex items-center justify-center gap-2 p-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Submitting entry...</span>
+                </div>
+              )}
+
+              <div className="text-center">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setQuickEntryMode(false)}>
+                  New student? Fill full form / नए छात्र? पूरा फॉर्म भरें →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(libraryType !== 'college' || !quickEntryMode) && (
         <Card className="shadow-card border-border/50">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-3">
