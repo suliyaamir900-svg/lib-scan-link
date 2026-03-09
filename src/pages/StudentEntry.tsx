@@ -328,7 +328,7 @@ export default function StudentEntry() {
     if (!activeEntry || !libraryId) return;
     setLoading(true);
     const now = new Date();
-    const exitTime = now.toTimeString().split(' ')[0].substring(0, 5);
+    const exitTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
 
     const entryParts = activeEntry.entry_time.split(':');
     const entryMinutes = parseInt(entryParts[0]) * 60 + parseInt(entryParts[1]);
