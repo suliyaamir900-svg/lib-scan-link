@@ -31,6 +31,7 @@ export default function SettingsPage() {
     total_seats: 0, max_capacity: 100, default_issue_days: 14,
     default_fine_per_day: 5, allow_reservations: true,
     allow_seat_booking: true, allow_queue: true, show_announcements_on_entry: true,
+    entry_password: '',
   });
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [changingPassword, setChangingPassword] = useState(false);
@@ -76,6 +77,7 @@ export default function SettingsPage() {
             allow_seat_booking: (s as any).allow_seat_booking !== false,
             allow_queue: (s as any).allow_queue !== false,
             show_announcements_on_entry: (s as any).show_announcements_on_entry !== false,
+            entry_password: (s as any).entry_password || '',
           });
         }
 
@@ -114,6 +116,7 @@ export default function SettingsPage() {
       allow_seat_booking: settingsForm.allow_seat_booking,
       allow_queue: settingsForm.allow_queue,
       show_announcements_on_entry: settingsForm.show_announcements_on_entry,
+      entry_password: settingsForm.entry_password.trim() || null,
       updated_at: new Date().toISOString(),
     } as any).eq('id', settings.id);
     setSavingSettings(false);
@@ -445,6 +448,25 @@ export default function SettingsPage() {
                   desc="Allow students to reserve books / छात्र किताबें रिज़र्व कर सकें"
                   checked={settingsForm.allow_reservations}
                   onChange={(v: boolean) => setSettingsForm(p => ({ ...p, allow_reservations: v }))} />
+
+                <div className="p-3 rounded-xl bg-muted/40 border border-border/50 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center"><Lock className="h-4 w-4 text-primary" /></div>
+                    <div>
+                      <p className="text-sm font-medium">Entry Password / एंट्री पासवर्ड</p>
+                      <p className="text-xs text-muted-foreground">College students must enter this password to submit entry / कॉलेज के छात्रों को एंट्री के लिए यह पासवर्ड डालना होगा</p>
+                    </div>
+                  </div>
+                  <Input
+                    value={settingsForm.entry_password}
+                    onChange={e => setSettingsForm(p => ({ ...p, entry_password: e.target.value }))}
+                    placeholder="Set a common password (leave empty to disable) / पासवर्ड सेट करें (खाली = बंद)"
+                    className="text-sm"
+                  />
+                  {settingsForm.entry_password && (
+                    <p className="text-[11px] text-primary">✅ Password active: "{settingsForm.entry_password}"</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
