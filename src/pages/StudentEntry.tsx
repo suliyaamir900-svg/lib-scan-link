@@ -791,14 +791,66 @@ export default function StudentEntry() {
                 </Button>
               </div>
 
-              {quickSearchResults.length > 0 && (
+              {/* Password prompt */}
+              {selectedQuickProfile && (
+                <div className="p-4 rounded-xl border-2 border-primary bg-primary/5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                      {selectedQuickProfile.full_name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{selectedQuickProfile.full_name}</p>
+                      <p className="text-[11px] text-muted-foreground">{selectedQuickProfile.department || ''}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1"><Lock className="h-3 w-3" /> Entry Password / एंट्री पासवर्ड</Label>
+                    <Input
+                      type="password"
+                      value={entryPasswordInput}
+                      onChange={e => setEntryPasswordInput(e.target.value)}
+                      placeholder="Enter library password"
+                      className="h-9 text-sm"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          if (entryPasswordInput === libSettings.entry_password) {
+                            handleQuickSubmit(selectedQuickProfile);
+                            setSelectedQuickProfile(null);
+                          } else {
+                            toast.error('Wrong password! / गलत पासवर्ड!');
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => { setSelectedQuickProfile(null); setEntryPasswordInput(''); }}>
+                      Cancel / रद्द
+                    </Button>
+                    <Button size="sm" className="flex-1 gradient-primary text-primary-foreground" disabled={quickSubmitting}
+                      onClick={() => {
+                        if (entryPasswordInput === libSettings.entry_password) {
+                          handleQuickSubmit(selectedQuickProfile);
+                          setSelectedQuickProfile(null);
+                        } else {
+                          toast.error('Wrong password! / गलत पासवर्ड!');
+                        }
+                      }}>
+                      {quickSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit Entry / एंट्री करें'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Search results */}
+              {!selectedQuickProfile && quickSearchResults.length > 0 && (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {quickSearchResults.map((p: any) => (
                     <button
                       key={p.id}
                       type="button"
                       disabled={quickSubmitting}
-                      onClick={() => handleQuickSubmit(p)}
+                      onClick={() => handleQuickProfileSelect(p)}
                       className="w-full p-3 rounded-xl border-2 border-border hover:border-primary/60 transition-all flex items-center gap-3 text-left bg-card"
                     >
                       {p.photo_url ? (
