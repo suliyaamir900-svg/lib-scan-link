@@ -423,6 +423,8 @@ export default function StudentEntry() {
 
     setLoading(true);
     const dept = showCustomDept ? customDept.trim() : form.department;
+    const now = new Date();
+    const exactTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     const { error, data: newEntry } = await supabase.from('student_entries').insert({
       library_id: libraryId,
       user_type: form.userType,
@@ -440,6 +442,7 @@ export default function StudentEntry() {
       signature_path: signature,
       visit_purpose: visitPurpose.trim() || null,
       locker_id: selectedLockerId || null,
+      entry_time: exactTime,
     } as any).select().single();
 
     // Assign locker
