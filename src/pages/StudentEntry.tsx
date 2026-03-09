@@ -109,7 +109,7 @@ export default function StudentEntry() {
         supabase.from('library_seats').select('*').eq('library_id', libraryId).eq('is_active', true).order('seat_number'),
         supabase.from('student_entries').select('seat_id').eq('library_id', libraryId).eq('entry_date', today).is('exit_time', null),
         supabase.from('announcements').select('*').eq('library_id', libraryId).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
-        supabase.from('library_settings').select('allow_seat_booking, allow_queue, show_announcements_on_entry').eq('library_id', libraryId).maybeSingle(),
+        supabase.from('library_settings').select('allow_seat_booking, allow_queue, show_announcements_on_entry, entry_password').eq('library_id', libraryId).maybeSingle(),
         supabase.from('seat_queue').select('id', { count: 'exact' }).eq('library_id', libraryId).eq('status', 'waiting'),
         supabase.from('library_departments' as any).select('name').eq('library_id', libraryId).order('name'),
         supabase.from('library_years' as any).select('name').eq('library_id', libraryId).order('name'),
