@@ -8,6 +8,7 @@ import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, Graduati
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
+import LibraryTypeSetup from './LibraryTypeSetup';
 
 const COLORS = ['hsl(250, 80%, 60%)', 'hsl(200, 90%, 55%)', 'hsl(320, 75%, 55%)', 'hsl(30, 90%, 55%)', 'hsl(160, 70%, 45%)', 'hsl(0, 84%, 60%)'];
 
@@ -54,6 +55,11 @@ export default function Dashboard() {
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t('common.loading')}</div>;
   if (!user) return <Navigate to="/login" />;
+
+  // Show library type setup if not set
+  if (library && !library.library_type) {
+    return <LibraryTypeSetup libraryId={library.id} onDone={(type) => setLibrary({ ...library, library_type: type })} />;
+  }
 
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];

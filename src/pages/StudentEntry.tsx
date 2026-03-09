@@ -359,6 +359,46 @@ export default function StudentEntry() {
           total_points: 5,
         });
       }
+
+      // Auto-create profile if not exists
+      if (form.userType === 'student') {
+        const enrollOrRoll = form.enrollmentNumber.trim() || form.rollNumber.trim();
+        if (enrollOrRoll) {
+          const { data: existingProfile } = await (supabase as any).from('student_profiles')
+            .select('id').eq('library_id', libraryId)
+            .or(`enrollment_number.eq.${enrollOrRoll},roll_number.eq.${enrollOrRoll}`)
+            .maybeSingle();
+          if (!existingProfile) {
+            await (supabase as any).from('student_profiles').insert({
+              library_id: libraryId,
+              full_name: form.fullName.trim(),
+              enrollment_number: form.enrollmentNumber.trim() || null,
+              roll_number: form.rollNumber.trim(),
+              email: form.email.trim() || null,
+              mobile: form.phone.trim(),
+              department: dept,
+              batch_year: form.year,
+              signature_url: signature,
+            });
+          }
+        }
+      } else {
+        const empId = form.employeeId.trim();
+        if (empId) {
+          const { data: existingTeacher } = await (supabase as any).from('teacher_profiles')
+            .select('id').eq('library_id', libraryId).eq('employee_id', empId).maybeSingle();
+          if (!existingTeacher) {
+            await (supabase as any).from('teacher_profiles').insert({
+              library_id: libraryId,
+              full_name: form.fullName.trim(),
+              employee_id: empId,
+              email: form.email.trim() || null,
+              mobile: form.phone.trim(),
+              department: dept,
+            });
+          }
+        }
+      }
     }
 
     setLoading(false);
