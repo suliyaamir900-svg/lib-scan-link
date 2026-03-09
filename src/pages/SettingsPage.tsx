@@ -116,6 +116,7 @@ export default function SettingsPage() {
       allow_seat_booking: settingsForm.allow_seat_booking,
       allow_queue: settingsForm.allow_queue,
       show_announcements_on_entry: settingsForm.show_announcements_on_entry,
+      entry_password: settingsForm.entry_password.trim() || null,
       updated_at: new Date().toISOString(),
     } as any).eq('id', settings.id);
     setSavingSettings(false);
