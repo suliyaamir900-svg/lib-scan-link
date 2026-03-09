@@ -22,6 +22,7 @@ type LibrarySettings = {
   allow_seat_booking?: boolean;
   allow_queue?: boolean;
   show_announcements_on_entry?: boolean;
+  entry_password?: string | null;
 };
 
 export default function StudentEntry() {
