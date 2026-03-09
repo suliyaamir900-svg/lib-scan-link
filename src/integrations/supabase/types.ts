@@ -682,6 +682,7 @@ export type Database = {
           created_at: string | null
           default_fine_per_day: number | null
           default_issue_days: number | null
+          entry_password: string | null
           id: string
           library_id: string
           max_capacity: number | null
@@ -696,6 +697,7 @@ export type Database = {
           created_at?: string | null
           default_fine_per_day?: number | null
           default_issue_days?: number | null
+          entry_password?: string | null
           id?: string
           library_id: string
           max_capacity?: number | null
@@ -710,6 +712,7 @@ export type Database = {
           created_at?: string | null
           default_fine_per_day?: number | null
           default_issue_days?: number | null
+          entry_password?: string | null
           id?: string
           library_id?: string
           max_capacity?: number | null

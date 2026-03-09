@@ -1,0 +1,1 @@
+ALTER TABLE public.library_settings ADD COLUMN IF NOT EXISTS entry_password text DEFAULT NULL;
