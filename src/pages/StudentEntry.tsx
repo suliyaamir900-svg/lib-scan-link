@@ -36,8 +36,16 @@ export default function StudentEntry() {
   const [loading, setLoading] = useState(false);
   const [libraryName, setLibraryName] = useState('');
   const [collegeName, setCollegeName] = useState('');
+  const [libraryType, setLibraryType] = useState<string>('college');
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [libraryNotFound, setLibraryNotFound] = useState(false);
+  
+  // Quick entry for college libraries
+  const [quickSearchQuery, setQuickSearchQuery] = useState('');
+  const [quickSearchResults, setQuickSearchResults] = useState<any[]>([]);
+  const [quickSearching, setQuickSearching] = useState(false);
+  const [quickEntryMode, setQuickEntryMode] = useState(true); // default for college
+  const [quickSubmitting, setQuickSubmitting] = useState(false);
   const [customDept, setCustomDept] = useState('');
   const [deptSearch, setDeptSearch] = useState('');
   const [showCustomDept, setShowCustomDept] = useState(false);
@@ -81,7 +89,7 @@ export default function StudentEntry() {
     const fetchLibrary = async () => {
       const { data, error } = await supabase
         .from('libraries')
-        .select('name, college_name')
+        .select('name, college_name, library_type')
         .eq('id', libraryId)
         .maybeSingle();
       if (error || !data) {
@@ -91,6 +99,7 @@ export default function StudentEntry() {
       }
       setLibraryName(data.name);
       setCollegeName(data.college_name);
+      setLibraryType(data.library_type || 'college');
 
       const today = new Date().toISOString().split('T')[0];
       const [seatsRes, entriesRes, annRes, settingsRes, queueRes, deptRes, yearRes, lockerRes, lockerAssignRes] = await Promise.all([
@@ -142,6 +151,103 @@ export default function StudentEntry() {
     }));
     setAutoFilled(true);
     toast.success('Details auto-filled! / विवरण ऑटो-फिल हो गए!');
+  };
+
+  // ======== QUICK SEARCH FOR COLLEGE LIBRARIES ========
+  const handleQuickSearch = async () => {
+    if (!libraryId || !quickSearchQuery.trim()) return;
+    setQuickSearching(true);
+    const q = quickSearchQuery.trim();
+    
+    // Search student_profiles and teacher_profiles
+    const { data: students } = await (supabase as any)
+      .from('student_profiles')
+      .select('id, full_name, enrollment_number, roll_number, department, mobile, email, batch_year, photo_url')
+      .eq('library_id', libraryId)
+      .or(`full_name.ilike.%${q}%,enrollment_number.ilike.%${q}%,roll_number.ilike.%${q}%,mobile.ilike.%${q}%`)
+      .limit(10);
+
+    const { data: teachers } = await (supabase as any)
+      .from('teacher_profiles')
+      .select('id, full_name, employee_id, department, mobile, email, photo_url')
+      .eq('library_id', libraryId)
+      .or(`full_name.ilike.%${q}%,employee_id.ilike.%${q}%,mobile.ilike.%${q}%`)
+      .limit(5);
+
+    const results: any[] = [];
+    (students || []).forEach((s: any) => results.push({ ...s, _type: 'student' }));
+    (teachers || []).forEach((t: any) => results.push({ ...t, _type: 'teacher' }));
+    setQuickSearchResults(results);
+    setQuickSearching(false);
+    if (results.length === 0) toast.error('No profile found / कोई प्रोफ़ाइल नहीं मिली');
+  };
+
+  const handleQuickSubmit = async (profile: any) => {
+    if (!libraryId) return;
+    setQuickSubmitting(true);
+    const isStudent = profile._type === 'student';
+    const dept = profile.department || '-';
+    const now = new Date();
+
+    const { error, data: newEntry } = await supabase.from('student_entries').insert({
+      library_id: libraryId,
+      user_type: isStudent ? 'student' : 'teacher',
+      student_name: profile.full_name,
+      department: dept,
+      year: isStudent ? (profile.batch_year || '-') : '-',
+      roll_number: isStudent ? (profile.roll_number || profile.enrollment_number || '-') : (profile.employee_id || '-'),
+      enrollment_number: isStudent ? (profile.enrollment_number || null) : null,
+      employee_id: !isStudent ? (profile.employee_id || null) : null,
+      mobile: profile.mobile || '',
+      email: profile.email || null,
+      device_info: navigator.userAgent,
+      seat_id: selectedSeatId || null,
+      locker_id: selectedLockerId || null,
+      visit_purpose: visitPurpose.trim() || null,
+    } as any).select().single();
+
+    // Assign locker
+    if (!error && selectedLockerId && newEntry) {
+      await (supabase as any).from('locker_assignments').insert({
+        library_id: libraryId,
+        locker_id: selectedLockerId,
+        student_id: isStudent ? (profile.roll_number || profile.enrollment_number) : profile.employee_id,
+        student_name: profile.full_name,
+      });
+    }
+
+    // Upsert gamification points
+    if (!error) {
+      const sid = isStudent ? (profile.roll_number || profile.enrollment_number) : profile.employee_id;
+      if (sid) {
+        const { data: existingPoints } = await supabase
+          .from('student_points').select('*')
+          .eq('library_id', libraryId).eq('student_id', sid).maybeSingle();
+        if (existingPoints) {
+          await supabase.from('student_points').update({
+            library_visits: (existingPoints.library_visits || 0) + 1,
+            total_points: (existingPoints.total_points || 0) + 5,
+            student_name: profile.full_name, department: dept,
+            updated_at: now.toISOString(),
+          }).eq('id', existingPoints.id);
+        } else {
+          await supabase.from('student_points').insert({
+            library_id: libraryId, student_id: sid,
+            student_name: profile.full_name, department: dept,
+            library_visits: 1, total_points: 5,
+          });
+        }
+      }
+    }
+
+    setQuickSubmitting(false);
+    if (error) {
+      toast.error('Failed to submit / जमा करने में विफल');
+      console.error(error);
+    } else {
+      setSubmitted(true);
+      toast.success('Entry recorded! / एंट्री दर्ज हो गई!');
+    }
   };
 
   const clearSignature = () => {
@@ -638,6 +744,84 @@ export default function StudentEntry() {
           </div>
         )}
 
+        {/* QUICK ENTRY FOR COLLEGE LIBRARIES */}
+        {(libraryType === 'college') && quickEntryMode && (
+          <Card className="shadow-card border-border/50 mb-4">
+            <CardHeader className="text-center pb-2">
+              <div className="flex justify-center mb-3">
+                <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
+                  <BookOpen className="h-6 w-6 text-primary-foreground" />
+                </div>
+              </div>
+              <CardTitle className="text-lg">{libraryName}</CardTitle>
+              <CardDescription>{collegeName}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm font-medium text-center">Quick Entry / त्वरित एंट्री</p>
+              <p className="text-xs text-center text-muted-foreground">
+                Search your name, enrollment number, or phone / अपना नाम, नामांकन नंबर, या फोन खोजें
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={quickSearchQuery}
+                  onChange={e => setQuickSearchQuery(e.target.value)}
+                  placeholder="Name / Enrollment / Phone"
+                  className="h-10"
+                  onKeyDown={e => e.key === 'Enter' && handleQuickSearch()}
+                />
+                <Button onClick={handleQuickSearch} disabled={quickSearching || !quickSearchQuery.trim()} className="gradient-primary text-primary-foreground h-10 px-4">
+                  {quickSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔍'}
+                </Button>
+              </div>
+
+              {quickSearchResults.length > 0 && (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {quickSearchResults.map((p: any) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      disabled={quickSubmitting}
+                      onClick={() => handleQuickSubmit(p)}
+                      className="w-full p-3 rounded-xl border-2 border-border hover:border-primary/60 transition-all flex items-center gap-3 text-left bg-card"
+                    >
+                      {p.photo_url ? (
+                        <img src={p.photo_url} alt="" className="h-10 w-10 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                          {p.full_name?.charAt(0)?.toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm truncate">{p.full_name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {p._type === 'student'
+                            ? `${p.enrollment_number || p.roll_number || ''} • ${p.department || ''}`
+                            : `${p.employee_id || ''} • ${p.department || ''} • Teacher`}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-[9px] shrink-0 capitalize">{p._type}</Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {quickSubmitting && (
+                <div className="flex items-center justify-center gap-2 p-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Submitting entry...</span>
+                </div>
+              )}
+
+              <div className="text-center">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setQuickEntryMode(false)}>
+                  New student? Fill full form / नए छात्र? पूरा फॉर्म भरें →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(libraryType !== 'college' || !quickEntryMode) && (
         <Card className="shadow-card border-border/50">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-3">
@@ -949,6 +1133,17 @@ export default function StudentEntry() {
             )}
           </CardContent>
         </Card>
+        )}
+
+        {/* Back to quick entry for college */}
+        {libraryType === 'college' && !quickEntryMode && (
+          <div className="text-center mt-3">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { setQuickEntryMode(true); setStep(1); }}>
+              ← Back to Quick Entry / त्वरित एंट्री पर वापस
+            </Button>
+          </div>
+        )}
+
         <Footer />
       </div>
     </div>
