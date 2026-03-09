@@ -77,6 +77,7 @@ export default function SettingsPage() {
             allow_seat_booking: (s as any).allow_seat_booking !== false,
             allow_queue: (s as any).allow_queue !== false,
             show_announcements_on_entry: (s as any).show_announcements_on_entry !== false,
+            entry_password: (s as any).entry_password || '',
           });
         }
 
