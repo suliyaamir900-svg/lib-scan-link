@@ -446,6 +446,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          library_type: string | null
           name: string
           phone: string | null
           qr_code_url: string | null
@@ -458,6 +459,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          library_type?: string | null
           name: string
           phone?: string | null
           qr_code_url?: string | null
@@ -470,6 +472,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          library_type?: string | null
           name?: string
           phone?: string | null
           qr_code_url?: string | null
@@ -1089,6 +1092,98 @@ export type Database = {
           },
         ]
       }
+      student_profiles: {
+        Row: {
+          address: string | null
+          admission_year: string | null
+          batch_year: string | null
+          course: string | null
+          created_at: string
+          current_semester: string | null
+          date_of_birth: string | null
+          department: string | null
+          email: string | null
+          emergency_contact: string | null
+          enrollment_number: string | null
+          father_email: string | null
+          father_mobile: string | null
+          father_name: string | null
+          full_name: string
+          gender: string | null
+          guardian_occupation: string | null
+          id: string
+          library_id: string
+          mobile: string | null
+          photo_url: string | null
+          roll_number: string | null
+          signature_url: string | null
+          student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admission_year?: string | null
+          batch_year?: string | null
+          course?: string | null
+          created_at?: string
+          current_semester?: string | null
+          date_of_birth?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          enrollment_number?: string | null
+          father_email?: string | null
+          father_mobile?: string | null
+          father_name?: string | null
+          full_name: string
+          gender?: string | null
+          guardian_occupation?: string | null
+          id?: string
+          library_id: string
+          mobile?: string | null
+          photo_url?: string | null
+          roll_number?: string | null
+          signature_url?: string | null
+          student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admission_year?: string | null
+          batch_year?: string | null
+          course?: string | null
+          created_at?: string
+          current_semester?: string | null
+          date_of_birth?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          enrollment_number?: string | null
+          father_email?: string | null
+          father_mobile?: string | null
+          father_name?: string | null
+          full_name?: string
+          gender?: string | null
+          guardian_occupation?: string | null
+          id?: string
+          library_id?: string
+          mobile?: string | null
+          photo_url?: string | null
+          roll_number?: string | null
+          signature_url?: string | null
+          student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_profiles_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_rooms: {
         Row: {
           capacity: number
@@ -1117,6 +1212,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "study_rooms_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_profiles: {
+        Row: {
+          address: string | null
+          created_at: string
+          department: string | null
+          designation: string | null
+          email: string | null
+          employee_id: string | null
+          full_name: string
+          id: string
+          joining_date: string | null
+          library_id: string
+          mobile: string | null
+          photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          employee_id?: string | null
+          full_name: string
+          id?: string
+          joining_date?: string | null
+          library_id: string
+          mobile?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          employee_id?: string | null
+          full_name?: string
+          id?: string
+          joining_date?: string | null
+          library_id?: string
+          mobile?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_profiles_library_id_fkey"
             columns: ["library_id"]
             isOneToOne: false
             referencedRelation: "libraries"
