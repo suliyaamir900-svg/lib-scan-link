@@ -89,7 +89,7 @@ export default function StudentEntry() {
     const fetchLibrary = async () => {
       const { data, error } = await supabase
         .from('libraries')
-        .select('name, college_name')
+        .select('name, college_name, library_type')
         .eq('id', libraryId)
         .maybeSingle();
       if (error || !data) {
@@ -99,6 +99,7 @@ export default function StudentEntry() {
       }
       setLibraryName(data.name);
       setCollegeName(data.college_name);
+      setLibraryType(data.library_type || 'college');
 
       const today = new Date().toISOString().split('T')[0];
       const [seatsRes, entriesRes, annRes, settingsRes, queueRes, deptRes, yearRes, lockerRes, lockerAssignRes] = await Promise.all([
