@@ -1133,6 +1133,17 @@ export default function StudentEntry() {
             )}
           </CardContent>
         </Card>
+        )}
+
+        {/* Back to quick entry for college */}
+        {libraryType === 'college' && !quickEntryMode && (
+          <div className="text-center mt-3">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { setQuickEntryMode(true); setStep(1); }}>
+              ← Back to Quick Entry / त्वरित एंट्री पर वापस
+            </Button>
+          </div>
+        )}
+
         <Footer />
       </div>
     </div>
