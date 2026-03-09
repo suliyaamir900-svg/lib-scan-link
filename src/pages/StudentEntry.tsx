@@ -185,12 +185,22 @@ export default function StudentEntry() {
     if (results.length === 0) toast.error('No profile found / कोई प्रोफ़ाइल नहीं मिली');
   };
 
+  const handleQuickProfileSelect = (profile: any) => {
+    if (libSettings.entry_password) {
+      setSelectedQuickProfile(profile);
+      setEntryPasswordInput('');
+    } else {
+      handleQuickSubmit(profile);
+    }
+  };
+
   const handleQuickSubmit = async (profile: any) => {
     if (!libraryId) return;
     setQuickSubmitting(true);
     const isStudent = profile._type === 'student';
     const dept = profile.department || '-';
     const now = new Date();
+    const exactTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
 
     const { error, data: newEntry } = await supabase.from('student_entries').insert({
       library_id: libraryId,
@@ -207,6 +217,7 @@ export default function StudentEntry() {
       seat_id: selectedSeatId || null,
       locker_id: selectedLockerId || null,
       visit_purpose: visitPurpose.trim() || null,
+      entry_time: exactTime,
     } as any).select().single();
 
     // Assign locker
