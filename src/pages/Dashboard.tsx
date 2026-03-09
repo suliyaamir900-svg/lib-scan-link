@@ -56,6 +56,11 @@ export default function Dashboard() {
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t('common.loading')}</div>;
   if (!user) return <Navigate to="/login" />;
 
+  // Show library type setup if not set
+  if (library && !library.library_type) {
+    return <LibraryTypeSetup libraryId={library.id} onDone={(type) => setLibrary({ ...library, library_type: type })} />;
+  }
+
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
