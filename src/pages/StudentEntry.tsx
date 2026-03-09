@@ -47,6 +47,8 @@ export default function StudentEntry() {
   const [quickSearching, setQuickSearching] = useState(false);
   const [quickEntryMode, setQuickEntryMode] = useState(true); // default for college
   const [quickSubmitting, setQuickSubmitting] = useState(false);
+  const [entryPasswordInput, setEntryPasswordInput] = useState('');
+  const [selectedQuickProfile, setSelectedQuickProfile] = useState<any>(null);
   const [customDept, setCustomDept] = useState('');
   const [deptSearch, setDeptSearch] = useState('');
   const [showCustomDept, setShowCustomDept] = useState(false);
