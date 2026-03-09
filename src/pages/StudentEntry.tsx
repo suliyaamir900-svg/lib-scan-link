@@ -153,6 +153,103 @@ export default function StudentEntry() {
     toast.success('Details auto-filled! / विवरण ऑटो-फिल हो गए!');
   };
 
+  // ======== QUICK SEARCH FOR COLLEGE LIBRARIES ========
+  const handleQuickSearch = async () => {
+    if (!libraryId || !quickSearchQuery.trim()) return;
+    setQuickSearching(true);
+    const q = quickSearchQuery.trim();
+    
+    // Search student_profiles and teacher_profiles
+    const { data: students } = await (supabase as any)
+      .from('student_profiles')
+      .select('id, full_name, enrollment_number, roll_number, department, mobile, email, batch_year, photo_url')
+      .eq('library_id', libraryId)
+      .or(`full_name.ilike.%${q}%,enrollment_number.ilike.%${q}%,roll_number.ilike.%${q}%,mobile.ilike.%${q}%`)
+      .limit(10);
+
+    const { data: teachers } = await (supabase as any)
+      .from('teacher_profiles')
+      .select('id, full_name, employee_id, department, mobile, email, photo_url')
+      .eq('library_id', libraryId)
+      .or(`full_name.ilike.%${q}%,employee_id.ilike.%${q}%,mobile.ilike.%${q}%`)
+      .limit(5);
+
+    const results: any[] = [];
+    (students || []).forEach((s: any) => results.push({ ...s, _type: 'student' }));
+    (teachers || []).forEach((t: any) => results.push({ ...t, _type: 'teacher' }));
+    setQuickSearchResults(results);
+    setQuickSearching(false);
+    if (results.length === 0) toast.error('No profile found / कोई प्रोफ़ाइल नहीं मिली');
+  };
+
+  const handleQuickSubmit = async (profile: any) => {
+    if (!libraryId) return;
+    setQuickSubmitting(true);
+    const isStudent = profile._type === 'student';
+    const dept = profile.department || '-';
+    const now = new Date();
+
+    const { error, data: newEntry } = await supabase.from('student_entries').insert({
+      library_id: libraryId,
+      user_type: isStudent ? 'student' : 'teacher',
+      student_name: profile.full_name,
+      department: dept,
+      year: isStudent ? (profile.batch_year || '-') : '-',
+      roll_number: isStudent ? (profile.roll_number || profile.enrollment_number || '-') : (profile.employee_id || '-'),
+      enrollment_number: isStudent ? (profile.enrollment_number || null) : null,
+      employee_id: !isStudent ? (profile.employee_id || null) : null,
+      mobile: profile.mobile || '',
+      email: profile.email || null,
+      device_info: navigator.userAgent,
+      seat_id: selectedSeatId || null,
+      locker_id: selectedLockerId || null,
+      visit_purpose: visitPurpose.trim() || null,
+    } as any).select().single();
+
+    // Assign locker
+    if (!error && selectedLockerId && newEntry) {
+      await (supabase as any).from('locker_assignments').insert({
+        library_id: libraryId,
+        locker_id: selectedLockerId,
+        student_id: isStudent ? (profile.roll_number || profile.enrollment_number) : profile.employee_id,
+        student_name: profile.full_name,
+      });
+    }
+
+    // Upsert gamification points
+    if (!error) {
+      const sid = isStudent ? (profile.roll_number || profile.enrollment_number) : profile.employee_id;
+      if (sid) {
+        const { data: existingPoints } = await supabase
+          .from('student_points').select('*')
+          .eq('library_id', libraryId).eq('student_id', sid).maybeSingle();
+        if (existingPoints) {
+          await supabase.from('student_points').update({
+            library_visits: (existingPoints.library_visits || 0) + 1,
+            total_points: (existingPoints.total_points || 0) + 5,
+            student_name: profile.full_name, department: dept,
+            updated_at: now.toISOString(),
+          }).eq('id', existingPoints.id);
+        } else {
+          await supabase.from('student_points').insert({
+            library_id: libraryId, student_id: sid,
+            student_name: profile.full_name, department: dept,
+            library_visits: 1, total_points: 5,
+          });
+        }
+      }
+    }
+
+    setQuickSubmitting(false);
+    if (error) {
+      toast.error('Failed to submit / जमा करने में विफल');
+      console.error(error);
+    } else {
+      setSubmitted(true);
+      toast.success('Entry recorded! / एंट्री दर्ज हो गई!');
+    }
+  };
+
   const clearSignature = () => {
     const canvas = canvasRef.current;
     if (canvas) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
