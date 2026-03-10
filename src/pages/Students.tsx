@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Trash2, Loader2, GraduationCap, ChevronLeft, ChevronRight, Eye, Plus, Upload, Edit, User, Phone, Mail, Calendar, MapPin, BookOpen, Clock, IndianRupee } from 'lucide-react';
+import { Search, Trash2, Loader2, GraduationCap, ChevronLeft, ChevronRight, Eye, Plus, Upload, Edit, User, Phone, Mail, Calendar, MapPin, BookOpen, Clock, IndianRupee, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
