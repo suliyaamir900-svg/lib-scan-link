@@ -232,6 +232,8 @@ export default function Students() {
     const currentIssues = profileBookIssues.filter((i: any) => i.status === 'issued');
     const returnedIssues = profileBookIssues.filter((i: any) => i.status === 'returned');
     const totalFines = profileBookIssues.reduce((s: number, i: any) => s + (i.fine_amount || 0), 0);
+    const todayEntries = profileEntries.filter((e: any) => e.entry_date === new Date().toISOString().split('T')[0]);
+    const activeEntries = profileEntries.filter((e: any) => !e.exit_time);
 
     return (
       <DashboardLayout>
@@ -241,19 +243,36 @@ export default function Students() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
-          <Card className="shadow-card lg:col-span-1">
+          <Card className="shadow-card lg:col-span-1 overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-primary via-secondary to-accent" />
             <CardContent className="p-6 text-center">
-              <Avatar className="h-24 w-24 mx-auto mb-4">
+              <Avatar className="h-24 w-24 mx-auto mb-4 border-4 border-primary/20">
                 {showProfile.photo_url ? <AvatarImage src={showProfile.photo_url} /> : null}
                 <AvatarFallback className="text-2xl bg-primary/10 text-primary">{(showProfile.full_name || '?')[0]}</AvatarFallback>
               </Avatar>
               <h2 className="text-xl font-bold">{showProfile.full_name}</h2>
               <p className="text-sm text-muted-foreground">{showProfile.department} • {showProfile.batch_year}</p>
-              {showProfile.enrollment_number && <p className="text-xs text-muted-foreground mt-1">Enrollment: {showProfile.enrollment_number}</p>}
+              {showProfile.enrollment_number && (
+                <div className="mt-2 inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                  <p className="text-xs font-semibold text-primary">EN: {showProfile.enrollment_number}</p>
+                </div>
+              )}
+              {showProfile.roll_number && (
+                <p className="text-xs text-muted-foreground mt-1">Roll: {showProfile.roll_number}</p>
+              )}
+              {showProfile.student_id && (
+                <p className="text-xs text-muted-foreground">ID: {showProfile.student_id}</p>
+              )}
               {showProfile.signature_url && (
                 <div className="mt-4">
                   <p className="text-xs text-muted-foreground mb-1">Signature</p>
-                  <img src={showProfile.signature_url} alt="Signature" className="h-12 mx-auto border rounded" />
+                  <img src={showProfile.signature_url} alt="Signature" className="h-12 mx-auto border rounded-lg" />
+                </div>
+              )}
+              {activeEntries.length > 0 && (
+                <div className="mt-3 p-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                  <p className="text-xs font-medium text-green-700 dark:text-green-400">🟢 Currently in Library</p>
+                  <p className="text-[10px] text-green-600 dark:text-green-500">Since {activeEntries[0]?.entry_time?.substring(0, 8)}</p>
                 </div>
               )}
               <Button variant="outline" size="sm" className="mt-4" onClick={() => setEditMode(!editMode)}>
@@ -264,16 +283,18 @@ export default function Students() {
 
           {/* Activity Dashboard */}
           <div className="lg:col-span-2 space-y-4">
+            {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {[
-                { label: 'Total Visits', value: totalVisits, icon: Eye, color: 'text-blue-500' },
-                { label: 'Study Time', value: `${Math.floor(totalStudyMins / 60)}h ${totalStudyMins % 60}m`, icon: Clock, color: 'text-green-500' },
-                { label: 'Books Issued', value: currentIssues.length, icon: BookOpen, color: 'text-orange-500' },
+                { label: 'Total Visits', value: totalVisits, icon: Eye, color: 'text-primary' },
+                { label: 'Study Time', value: `${Math.floor(totalStudyMins / 60)}h ${totalStudyMins % 60}m`, icon: Clock, color: 'text-secondary' },
+                { label: 'Currently Issued', value: currentIssues.length, icon: BookOpen, color: 'text-accent' },
                 { label: 'Books Returned', value: returnedIssues.length, icon: BookOpen, color: 'text-primary' },
-                { label: 'Total Books', value: profileBookIssues.length, icon: BookOpen, color: 'text-purple-500' },
-                { label: 'Total Fines', value: `₹${totalFines}`, icon: IndianRupee, color: 'text-red-500' },
+                { label: 'Total Books Borrowed', value: profileBookIssues.length, icon: BookOpen, color: 'text-secondary' },
+                { label: 'Total Fines', value: `₹${totalFines}`, icon: IndianRupee, color: 'text-destructive' },
               ].map(s => (
-                <Card key={s.label} className="shadow-sm">
+                <Card key={s.label} className="shadow-sm overflow-hidden">
+                  <div className="h-0.5 bg-gradient-to-r from-primary to-secondary" />
                   <CardContent className="p-3 text-center">
                     <s.icon className={`h-5 w-5 mx-auto mb-1 ${s.color}`} />
                     <p className="text-lg font-bold">{s.value}</p>
@@ -315,20 +336,25 @@ export default function Students() {
                   <h3 className="font-semibold mb-3">Student Details</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                     {[
-                      ['Email', showProfile.email, Mail],
-                      ['Mobile', showProfile.mobile, Phone],
+                      ['Enrollment No', showProfile.enrollment_number, GraduationCap],
                       ['Roll Number', showProfile.roll_number, User],
                       ['Student ID', showProfile.student_id, User],
+                      ['Email', showProfile.email, Mail],
+                      ['Mobile', showProfile.mobile, Phone],
                       ['Course', showProfile.course, GraduationCap],
                       ['Semester', showProfile.current_semester, Calendar],
                       ['Gender', showProfile.gender, User],
                       ['DOB', showProfile.date_of_birth, Calendar],
+                      ['Batch Year', showProfile.batch_year, Calendar],
+                      ['Admission Year', showProfile.admission_year, Calendar],
                       ['Father', showProfile.father_name, User],
                       ['Father Mobile', showProfile.father_mobile, Phone],
+                      ['Father Email', showProfile.father_email, Mail],
+                      ['Guardian Occupation', showProfile.guardian_occupation, User],
+                      ['Emergency Contact', showProfile.emergency_contact, Phone],
                       ['Address', showProfile.address, MapPin],
-                      ['Admission Year', showProfile.admission_year, Calendar],
                     ].map(([label, val, Icon]: any) => val ? (
-                      <div key={label} className="flex items-center gap-2 p-2 rounded bg-muted/30">
+                      <div key={label} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50">
                         <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <div><p className="text-[10px] text-muted-foreground">{label}</p><p className="font-medium text-xs">{val}</p></div>
                       </div>
@@ -338,17 +364,35 @@ export default function Students() {
               </Card>
             )}
 
-            {/* Visit History */}
-            {profileEntries.length > 0 && (
-              <Card className="shadow-card">
+            {/* Today's Entries */}
+            {todayEntries.length > 0 && (
+              <Card className="shadow-card border-primary/20">
                 <CardContent className="p-4">
-                  <h3 className="font-semibold mb-3">Visit History (Last 50)</h3>
-                  <div className="max-h-48 overflow-y-auto space-y-1">
-                    {profileEntries.map((e: any) => (
-                      <div key={e.id} className="flex justify-between p-2 rounded bg-muted/30 text-xs">
-                        <span>{e.entry_date}</span>
-                        <span>{e.entry_time?.slice(0, 5)} → {e.exit_time?.slice(0, 5) || 'Active'}</span>
-                        <span className="text-muted-foreground">{e.study_minutes ? `${e.study_minutes}min` : '-'}</span>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    Today's Entries ({todayEntries.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {todayEntries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between items-center p-3 rounded-xl bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary" />
+                          <div>
+                            <p className="font-medium">Entry: <strong>{e.entry_time?.substring(0, 8)}</strong></p>
+                            <p className="text-xs text-muted-foreground">
+                              Exit: <strong>{e.exit_time ? e.exit_time.substring(0, 8) : '🟢 Still inside'}</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {e.study_minutes ? (
+                            <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/10 text-secondary">
+                              {Math.floor(e.study_minutes / 60)}h {e.study_minutes % 60}m
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Active</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -356,20 +400,70 @@ export default function Students() {
               </Card>
             )}
 
-            {/* Book Issues */}
-            {profileBookIssues.length > 0 && (
+            {/* Visit History */}
+            {profileEntries.length > 0 && (
               <Card className="shadow-card">
                 <CardContent className="p-4">
-                  <h3 className="font-semibold mb-3">Book History</h3>
-                  <div className="max-h-48 overflow-y-auto space-y-1">
-                    {profileBookIssues.map((i: any) => (
-                      <div key={i.id} className="flex justify-between items-center p-2 rounded bg-muted/30 text-xs">
-                        <span className="font-medium">{i.borrower_name}</span>
-                        <span>{i.issue_date}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${i.status === 'issued' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                          {i.status}
+                  <h3 className="font-semibold mb-3">All Visit History ({profileEntries.length})</h3>
+                  <div className="max-h-64 overflow-y-auto space-y-1">
+                    {profileEntries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between items-center p-2.5 rounded-lg bg-muted/30 text-xs border border-border/30 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="font-medium">{e.entry_date}</span>
+                        </div>
+                        <span className="font-mono">
+                          {e.entry_time?.substring(0, 8)} → {e.exit_time ? e.exit_time.substring(0, 8) : <span className="text-green-600 dark:text-green-400 font-semibold">Active</span>}
                         </span>
-                        {(i.fine_amount || 0) > 0 && <span className="text-red-500">₹{i.fine_amount}</span>}
+                        <span className="text-muted-foreground min-w-[50px] text-right">
+                          {e.study_minutes ? `${Math.floor(e.study_minutes / 60)}h ${e.study_minutes % 60}m` : '-'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Currently Issued Books */}
+            {currentIssues.length > 0 && (
+              <Card className="shadow-card border-accent/20">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-accent" />
+                    Currently Issued Books ({currentIssues.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {currentIssues.map((i: any) => (
+                      <div key={i.id} className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-sm">
+                        <div className="flex justify-between items-center">
+                          <p className="font-semibold">{i.borrower_name || 'Book'}</p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent/20 text-accent">Issued</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                          <span>Issue: {i.issue_date}</span>
+                          <span>Due: {i.return_date}</span>
+                          {(i.fine_amount || 0) > 0 && <span className="text-destructive font-medium">Fine: ₹{i.fine_amount}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Book History */}
+            {returnedIssues.length > 0 && (
+              <Card className="shadow-card">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-3">Returned Books ({returnedIssues.length})</h3>
+                  <div className="max-h-48 overflow-y-auto space-y-1">
+                    {returnedIssues.map((i: any) => (
+                      <div key={i.id} className="flex justify-between items-center p-2.5 rounded-lg bg-muted/30 text-xs border border-border/30">
+                        <span className="font-medium flex-1">{i.borrower_name || 'Book'}</span>
+                        <span className="text-muted-foreground">{i.issue_date} → {i.actual_return_date || i.return_date}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 ml-2">Returned</span>
+                        {(i.fine_amount || 0) > 0 && <span className="text-destructive ml-2">₹{i.fine_amount}</span>}
                       </div>
                     ))}
                   </div>
