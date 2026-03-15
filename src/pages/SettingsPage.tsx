@@ -31,7 +31,7 @@ export default function SettingsPage() {
     total_seats: 0, max_capacity: 100, default_issue_days: 14,
     default_fine_per_day: 5, allow_reservations: true,
     allow_seat_booking: true, allow_queue: true, show_announcements_on_entry: true,
-    entry_password: '',
+    entry_password: '', max_books_student: 3, max_books_teacher: 5, max_fine_limit: 500,
   });
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [changingPassword, setChangingPassword] = useState(false);
