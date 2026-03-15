@@ -492,13 +492,33 @@ export default function SettingsPage() {
                     <Label className="flex items-center gap-2"><Clock className="h-4 w-4" /> Default Issue Days / जारी दिन</Label>
                     <Input type="number" min={1} value={settingsForm.default_issue_days}
                       onChange={e => setSettingsForm(p => ({ ...p, default_issue_days: parseInt(e.target.value) || 14 }))} />
-                    <p className="text-[11px] text-muted-foreground">How many days a book can be borrowed / किताब कितने दिन रख सकते हैं</p>
+                    <p className="text-[11px] text-muted-foreground">How many days a book can be borrowed</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><IndianRupee className="h-4 w-4" /> Fine Per Day (₹) / रोज़ जुर्माना</Label>
+                    <Label className="flex items-center gap-2"><IndianRupee className="h-4 w-4" /> Fine Per Day (₹)</Label>
                     <Input type="number" min={0} value={settingsForm.default_fine_per_day}
                       onChange={e => setSettingsForm(p => ({ ...p, default_fine_per_day: parseFloat(e.target.value) || 0 }))} />
-                    <p className="text-[11px] text-muted-foreground">Daily fine for late return / देर से वापस करने पर रोज़ जुर्माना</p>
+                    <p className="text-[11px] text-muted-foreground">Daily fine for late return</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> Max Books (Student)</Label>
+                    <Input type="number" min={1} value={settingsForm.max_books_student}
+                      onChange={e => setSettingsForm(p => ({ ...p, max_books_student: parseInt(e.target.value) || 3 }))} />
+                    <p className="text-[11px] text-muted-foreground">Max books a student can borrow at once</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Users className="h-4 w-4" /> Max Books (Teacher)</Label>
+                    <Input type="number" min={1} value={settingsForm.max_books_teacher}
+                      onChange={e => setSettingsForm(p => ({ ...p, max_books_teacher: parseInt(e.target.value) || 5 }))} />
+                    <p className="text-[11px] text-muted-foreground">Max books a teacher can borrow at once</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><IndianRupee className="h-4 w-4" /> Max Fine Limit (₹)</Label>
+                    <Input type="number" min={0} value={settingsForm.max_fine_limit}
+                      onChange={e => setSettingsForm(p => ({ ...p, max_fine_limit: parseFloat(e.target.value) || 500 }))} />
+                    <p className="text-[11px] text-muted-foreground">Maximum fine cap per book</p>
                   </div>
                 </div>
               </CardContent>
