@@ -31,7 +31,7 @@ export default function SettingsPage() {
     total_seats: 0, max_capacity: 100, default_issue_days: 14,
     default_fine_per_day: 5, allow_reservations: true,
     allow_seat_booking: true, allow_queue: true, show_announcements_on_entry: true,
-    entry_password: '',
+    entry_password: '', max_books_student: 3, max_books_teacher: 5, max_fine_limit: 500,
   });
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [changingPassword, setChangingPassword] = useState(false);
@@ -78,6 +78,9 @@ export default function SettingsPage() {
             allow_queue: (s as any).allow_queue !== false,
             show_announcements_on_entry: (s as any).show_announcements_on_entry !== false,
             entry_password: (s as any).entry_password || '',
+            max_books_student: (s as any).max_books_student || 3,
+            max_books_teacher: (s as any).max_books_teacher || 5,
+            max_fine_limit: (s as any).max_fine_limit || 500,
           });
         }
 
@@ -117,6 +120,9 @@ export default function SettingsPage() {
       allow_queue: settingsForm.allow_queue,
       show_announcements_on_entry: settingsForm.show_announcements_on_entry,
       entry_password: settingsForm.entry_password.trim() || null,
+      max_books_student: settingsForm.max_books_student,
+      max_books_teacher: settingsForm.max_books_teacher,
+      max_fine_limit: settingsForm.max_fine_limit,
       updated_at: new Date().toISOString(),
     } as any).eq('id', settings.id);
     setSavingSettings(false);
@@ -486,13 +492,33 @@ export default function SettingsPage() {
                     <Label className="flex items-center gap-2"><Clock className="h-4 w-4" /> Default Issue Days / जारी दिन</Label>
                     <Input type="number" min={1} value={settingsForm.default_issue_days}
                       onChange={e => setSettingsForm(p => ({ ...p, default_issue_days: parseInt(e.target.value) || 14 }))} />
-                    <p className="text-[11px] text-muted-foreground">How many days a book can be borrowed / किताब कितने दिन रख सकते हैं</p>
+                    <p className="text-[11px] text-muted-foreground">How many days a book can be borrowed</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><IndianRupee className="h-4 w-4" /> Fine Per Day (₹) / रोज़ जुर्माना</Label>
+                    <Label className="flex items-center gap-2"><IndianRupee className="h-4 w-4" /> Fine Per Day (₹)</Label>
                     <Input type="number" min={0} value={settingsForm.default_fine_per_day}
                       onChange={e => setSettingsForm(p => ({ ...p, default_fine_per_day: parseFloat(e.target.value) || 0 }))} />
-                    <p className="text-[11px] text-muted-foreground">Daily fine for late return / देर से वापस करने पर रोज़ जुर्माना</p>
+                    <p className="text-[11px] text-muted-foreground">Daily fine for late return</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> Max Books (Student)</Label>
+                    <Input type="number" min={1} value={settingsForm.max_books_student}
+                      onChange={e => setSettingsForm(p => ({ ...p, max_books_student: parseInt(e.target.value) || 3 }))} />
+                    <p className="text-[11px] text-muted-foreground">Max books a student can borrow at once</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Users className="h-4 w-4" /> Max Books (Teacher)</Label>
+                    <Input type="number" min={1} value={settingsForm.max_books_teacher}
+                      onChange={e => setSettingsForm(p => ({ ...p, max_books_teacher: parseInt(e.target.value) || 5 }))} />
+                    <p className="text-[11px] text-muted-foreground">Max books a teacher can borrow at once</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><IndianRupee className="h-4 w-4" /> Max Fine Limit (₹)</Label>
+                    <Input type="number" min={0} value={settingsForm.max_fine_limit}
+                      onChange={e => setSettingsForm(p => ({ ...p, max_fine_limit: parseFloat(e.target.value) || 500 }))} />
+                    <p className="text-[11px] text-muted-foreground">Maximum fine cap per book</p>
                   </div>
                 </div>
               </CardContent>

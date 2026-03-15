@@ -685,7 +685,10 @@ export type Database = {
           entry_password: string | null
           id: string
           library_id: string
+          max_books_student: number | null
+          max_books_teacher: number | null
           max_capacity: number | null
+          max_fine_limit: number | null
           show_announcements_on_entry: boolean | null
           total_seats: number | null
           updated_at: string | null
@@ -700,7 +703,10 @@ export type Database = {
           entry_password?: string | null
           id?: string
           library_id: string
+          max_books_student?: number | null
+          max_books_teacher?: number | null
           max_capacity?: number | null
+          max_fine_limit?: number | null
           show_announcements_on_entry?: boolean | null
           total_seats?: number | null
           updated_at?: string | null
@@ -715,7 +721,10 @@ export type Database = {
           entry_password?: string | null
           id?: string
           library_id?: string
+          max_books_student?: number | null
+          max_books_teacher?: number | null
           max_capacity?: number | null
+          max_fine_limit?: number | null
           show_announcements_on_entry?: boolean | null
           total_seats?: number | null
           updated_at?: string | null
