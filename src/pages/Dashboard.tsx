@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase, DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy, Megaphone, IndianRupee } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase,
+  DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy, Megaphone, IndianRupee, FileText,
+  Download, UserX, BookCopy, Activity, Database, Clock
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Link } from 'react-router-dom';
 import LibraryTypeSetup from './LibraryTypeSetup';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 const COLORS = ['hsl(250, 80%, 60%)', 'hsl(200, 90%, 55%)', 'hsl(320, 75%, 55%)', 'hsl(30, 90%, 55%)', 'hsl(160, 70%, 45%)', 'hsl(0, 84%, 60%)'];
 
@@ -20,6 +27,9 @@ export default function Dashboard() {
   const [issues, setIssues] = useState<any[]>([]);
   const [seats, setSeats] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [studentProfiles, setStudentProfiles] = useState<any[]>([]);
+  const [teacherProfiles, setTeacherProfiles] = useState<any[]>([]);
+  const [books, setBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,16 +38,22 @@ export default function Dashboard() {
       const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
       setLibrary(lib);
       if (lib) {
-        const [entRes, issRes, seatRes, annRes] = await Promise.all([
+        const [entRes, issRes, seatRes, annRes, spRes, tpRes, booksRes] = await Promise.all([
           supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
           supabase.from('book_issues').select('*').eq('library_id', lib.id),
           supabase.from('library_seats').select('*').eq('library_id', lib.id),
           (supabase as any).from('announcements').select('*').eq('library_id', lib.id).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
+          (supabase as any).from('student_profiles').select('id, full_name, department, enrollment_number').eq('library_id', lib.id),
+          (supabase as any).from('teacher_profiles').select('id, full_name, department, employee_id').eq('library_id', lib.id),
+          supabase.from('books').select('id, title, total_copies, available_copies, status').eq('library_id', lib.id),
         ]);
         setEntries(entRes.data || []);
         setIssues(issRes.data || []);
         setSeats(seatRes.data || []);
         setAnnouncements(annRes.data || []);
+        setStudentProfiles(spRes.data || []);
+        setTeacherProfiles(tpRes.data || []);
+        setBooks(booksRes.data || []);
       }
       setLoading(false);
     };
@@ -56,7 +72,6 @@ export default function Dashboard() {
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t('common.loading')}</div>;
   if (!user) return <Navigate to="/login" />;
 
-  // Show library type setup if not set
   if (library && !library.library_type) {
     return <LibraryTypeSetup libraryId={library.id} onDone={(type) => setLibrary({ ...library, library_type: type })} />;
   }
@@ -64,6 +79,7 @@ export default function Dashboard() {
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
 
   const todayEntries = entries.filter(e => e.entry_date === today);
   const studentsInside = todayEntries.filter(e => (e.user_type || 'student') === 'student' && !e.exit_time).length;
@@ -74,18 +90,79 @@ export default function Dashboard() {
     return sum + days * (i.fine_per_day || 5);
   }, 0);
   const occupiedSeats = new Set(todayEntries.filter(e => e.seat_id && !e.exit_time).map(e => e.seat_id)).size;
+  const issuedBooksCount = issues.filter(i => i.status === 'issued').length;
+  const totalBooksCount = books.length;
+  const totalCopies = books.reduce((s, b) => s + (b.total_copies || 0), 0);
+  const availableCopies = books.reduce((s, b) => s + (b.available_copies || 0), 0);
 
-  const stats = [
-    { label: t('dashboard.total_students'), value: entries.length.toString(), icon: Users, gradient: 'gradient-primary' },
-    { label: t('dashboard.today_entries'), value: todayEntries.length.toString(), icon: CalendarDays, gradient: 'gradient-accent' },
-    { label: 'Weekly / साप्ताहिक', value: entries.filter(e => e.entry_date >= weekAgo).length.toString(), icon: CalendarRange, gradient: 'gradient-warm' },
-    { label: 'Monthly / मासिक', value: entries.filter(e => e.entry_date >= monthAgo).length.toString(), icon: CalendarClock, gradient: 'gradient-success' },
+  // Inactive students (no visit in 90 days)
+  const activeStudentIds = new Set(entries.filter(e => e.entry_date >= ninetyDaysAgo).map(e => e.roll_number || e.enrollment_number));
+  const inactiveStudents = studentProfiles.filter(s => !activeStudentIds.has(s.enrollment_number) && !activeStudentIds.has(s.roll_number));
+
+  // Quick exports
+  const exportStudentList = () => {
+    const data = studentProfiles.map((s: any, i: number) => ({ 'S.No': i + 1, Name: s.full_name, Department: s.department || '-', Enrollment: s.enrollment_number || '-' }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Students');
+    XLSX.writeFile(wb, `students-${today}.xlsx`);
+    toast.success('Student list exported!');
+  };
+
+  const exportTeacherList = () => {
+    const data = teacherProfiles.map((t: any, i: number) => ({ 'S.No': i + 1, Name: t.full_name, Department: t.department || '-', 'Employee ID': t.employee_id || '-' }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Teachers');
+    XLSX.writeFile(wb, `teachers-${today}.xlsx`);
+    toast.success('Teacher list exported!');
+  };
+
+  const exportEntryLogs = () => {
+    const data = entries.map((e: any, i: number) => ({
+      'S.No': i + 1, Name: e.student_name, Department: e.department, 'Roll/ID': e.roll_number,
+      Date: e.entry_date, 'Entry Time': e.entry_time, 'Exit Time': e.exit_time || '-',
+      'Study (min)': e.study_minutes || 0, Type: e.user_type || 'student',
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Entry Logs');
+    XLSX.writeFile(wb, `entry-logs-${today}.xlsx`);
+    toast.success('Entry logs exported!');
+  };
+
+  const exportBookIssues = () => {
+    const data = issues.map((i: any, idx: number) => ({
+      'S.No': idx + 1, Borrower: i.borrower_name, 'Borrower ID': i.borrower_id, Type: i.borrower_type,
+      'Issue Date': i.issue_date, 'Due Date': i.return_date, Status: i.status,
+      'Fine (₹)': i.fine_amount || 0,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Book Issues');
+    XLSX.writeFile(wb, `book-issues-${today}.xlsx`);
+    toast.success('Book issues exported!');
+  };
+
+  // Stats rows
+  const mainStats = [
+    { label: 'Registered Students', value: studentProfiles.length, icon: GraduationCap, gradient: 'gradient-primary' },
+    { label: 'Registered Teachers', value: teacherProfiles.length, icon: Briefcase, gradient: 'gradient-accent' },
+    { label: 'Total Books', value: totalBooksCount, icon: BookOpen, gradient: 'gradient-warm' },
+    { label: 'Books Issued', value: issuedBooksCount, icon: BookCopy, gradient: 'gradient-success' },
+  ];
+
+  const activityStats = [
+    { label: t('dashboard.today_entries'), value: todayEntries.length.toString(), icon: CalendarDays, gradient: 'gradient-primary' },
+    { label: 'Weekly / साप्ताहिक', value: entries.filter(e => e.entry_date >= weekAgo).length.toString(), icon: CalendarRange, gradient: 'gradient-accent' },
+    { label: 'Monthly / मासिक', value: entries.filter(e => e.entry_date >= monthAgo).length.toString(), icon: CalendarClock, gradient: 'gradient-warm' },
+    { label: 'Total Entries', value: entries.length.toString(), icon: Users, gradient: 'gradient-success' },
   ];
 
   const occupancy = [
-    { label: 'Students Inside / छात्र अंदर', value: studentsInside, icon: GraduationCap, color: 'text-primary' },
-    { label: 'Teachers Inside / शिक्षक अंदर', value: teachersInside, icon: Briefcase, color: 'text-accent' },
-    { label: 'Total Inside / कुल अंदर', value: studentsInside + teachersInside, icon: DoorOpen, color: 'text-secondary' },
+    { label: 'Students Inside', value: studentsInside, icon: GraduationCap, color: 'text-primary' },
+    { label: 'Teachers Inside', value: teachersInside, icon: Briefcase, color: 'text-accent' },
+    { label: 'Total Inside', value: studentsInside + teachersInside, icon: DoorOpen, color: 'text-secondary' },
   ];
 
   // Department distribution
@@ -114,12 +191,7 @@ export default function Dashboard() {
     };
   });
 
-  // Most borrowed books
-  const bookBorrowCount: Record<string, number> = {};
-  issues.forEach(i => { bookBorrowCount[i.book_id] = (bookBorrowCount[i.book_id] || 0) + 1; });
-  const topBorrowedCount = Object.values(bookBorrowCount).sort((a, b) => b - a).slice(0, 5);
-
-  // Most frequent visitors
+  // Top visitors
   const visitorMap: Record<string, { name: string; count: number }> = {};
   entries.forEach(e => {
     const key = e.roll_number;
@@ -141,17 +213,34 @@ export default function Dashboard() {
         <div className="flex items-center justify-center py-20 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <>
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {stats.map((s, i) => (
+          {/* ── SMART SUMMARY ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {mainStats.map((s, i) => (
               <Card key={i} className="shadow-card border-border/50 overflow-hidden">
-                <CardContent className="p-5 flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-xl ${s.gradient} flex items-center justify-center shrink-0`}>
-                    <s.icon className="h-6 w-6 text-primary-foreground" />
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className={`h-11 w-11 rounded-xl ${s.gradient} flex items-center justify-center shrink-0`}>
+                    <s.icon className="h-5 w-5 text-primary-foreground" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{s.value}</p>
-                    <p className="text-sm text-muted-foreground">{s.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Activity Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {activityStats.map((s, i) => (
+              <Card key={i} className="shadow-card border-border/50 overflow-hidden">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-lg ${s.gradient} flex items-center justify-center shrink-0`}>
+                    <s.icon className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold">{s.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -159,7 +248,7 @@ export default function Dashboard() {
           </div>
 
           {/* Alerts Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Live Occupancy */}
             <Card className="shadow-card border-primary/20">
               <CardHeader className="pb-2">
@@ -171,9 +260,9 @@ export default function Dashboard() {
                 <div className="grid grid-cols-3 gap-2">
                   {occupancy.map((o, i) => (
                     <div key={i} className="text-center p-2 rounded-lg bg-muted/50">
-                      <o.icon className={`h-5 w-5 mx-auto mb-1 ${o.color}`} />
-                      <p className="text-xl font-bold">{o.value}</p>
-                      <p className="text-[10px] text-muted-foreground">{o.label.split('/')[0].trim()}</p>
+                      <o.icon className={`h-4 w-4 mx-auto mb-1 ${o.color}`} />
+                      <p className="text-lg font-bold">{o.value}</p>
+                      <p className="text-[9px] text-muted-foreground">{o.label}</p>
                     </div>
                   ))}
                 </div>
@@ -184,7 +273,7 @@ export default function Dashboard() {
             <Card className="shadow-card border-primary/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Armchair className="h-4 w-4 text-primary" /> Seat Status
+                  <Armchair className="h-4 w-4 text-primary" /> Seats
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -205,28 +294,85 @@ export default function Dashboard() {
             <Card className={`shadow-card ${overdueBooks > 0 ? 'border-destructive/30' : 'border-primary/20'}`}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-primary" /> Book Status
+                  <BookOpen className="h-4 w-4 text-primary" /> Books
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-primary">{issues.filter(i => i.status === 'issued').length}</p>
-                    <p className="text-[10px] text-muted-foreground">Issued</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-green-600">{availableCopies}</p>
+                    <p className="text-[9px] text-muted-foreground">Available</p>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className={`text-2xl font-bold ${overdueBooks > 0 ? 'text-destructive' : 'text-green-600'}`}>{overdueBooks}</p>
-                    <p className="text-[10px] text-muted-foreground">Overdue</p>
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-primary">{issuedBooksCount}</p>
+                    <p className="text-[9px] text-muted-foreground">Issued</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className={`text-lg font-bold ${overdueBooks > 0 ? 'text-destructive' : 'text-green-600'}`}>{overdueBooks}</p>
+                    <p className="text-[9px] text-muted-foreground">Overdue</p>
                   </div>
                 </div>
                 {overdueBooks > 0 && (
                   <div className="mt-2 p-2 rounded bg-destructive/5 text-xs text-destructive flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" /> {overdueBooks} overdue books!
+                    <AlertTriangle className="h-3 w-3" /> {overdueBooks} overdue!
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Inactive Students Alert */}
+            <Card className={`shadow-card ${inactiveStudents.length > 0 ? 'border-orange-300' : 'border-primary/20'}`}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <UserX className="h-4 w-4 text-orange-500" /> Inactive (90d)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <p className={`text-2xl font-bold ${inactiveStudents.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>{inactiveStudents.length}</p>
+                  <p className="text-[10px] text-muted-foreground">Inactive Students</p>
+                </div>
+                {inactiveStudents.length > 0 && (
+                  <div className="mt-2 text-[10px] text-muted-foreground max-h-12 overflow-y-auto">
+                    {inactiveStudents.slice(0, 3).map((s: any) => (
+                      <p key={s.id} className="truncate">{s.full_name} • {s.department}</p>
+                    ))}
+                    {inactiveStudents.length > 3 && <p>+{inactiveStudents.length - 3} more</p>}
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
+
+          {/* One-Click Exports */}
+          <Card className="shadow-card mb-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Download className="h-4 w-4 text-primary" /> Quick Exports / एक-क्लिक एक्सपोर्ट
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={exportStudentList} className="gap-1 text-xs">
+                  <GraduationCap className="h-3 w-3" /> Students ({studentProfiles.length})
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportTeacherList} className="gap-1 text-xs">
+                  <Briefcase className="h-3 w-3" /> Teachers ({teacherProfiles.length})
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportEntryLogs} className="gap-1 text-xs">
+                  <CalendarDays className="h-3 w-3" /> Entry Logs ({entries.length})
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportBookIssues} className="gap-1 text-xs">
+                  <BookOpen className="h-3 w-3" /> Book Issues ({issues.length})
+                </Button>
+                <Link to="/reports">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs">
+                    <FileText className="h-3 w-3" /> Advanced Reports →
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -351,7 +497,6 @@ export default function Dashboard() {
 
           {/* Fines & Announcements Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            {/* Active Fines */}
             <Link to="/fines">
               <Card className="shadow-card border-destructive/20 hover:border-destructive/40 transition-colors cursor-pointer">
                 <CardHeader className="pb-2">
@@ -363,7 +508,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-3xl font-bold text-destructive">₹{totalFines}</p>
-                      <p className="text-sm text-muted-foreground">{overdueBooks} overdue books — fine increases daily!</p>
+                      <p className="text-sm text-muted-foreground">{overdueBooks} overdue books</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-muted-foreground">Per day rate</p>
@@ -374,7 +519,6 @@ export default function Dashboard() {
               </Card>
             </Link>
 
-            {/* Announcements */}
             <Card className="shadow-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -383,7 +527,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {announcements.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-sm py-6">No announcements / कोई घोषणा नहीं</p>
+                  <p className="text-center text-muted-foreground text-sm py-6">No announcements</p>
                 ) : (
                   <div className="space-y-2">
                     {announcements.slice(0, 4).map((a: any) => (
