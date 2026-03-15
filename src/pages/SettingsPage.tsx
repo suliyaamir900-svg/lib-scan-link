@@ -78,6 +78,9 @@ export default function SettingsPage() {
             allow_queue: (s as any).allow_queue !== false,
             show_announcements_on_entry: (s as any).show_announcements_on_entry !== false,
             entry_password: (s as any).entry_password || '',
+            max_books_student: (s as any).max_books_student || 3,
+            max_books_teacher: (s as any).max_books_teacher || 5,
+            max_fine_limit: (s as any).max_fine_limit || 500,
           });
         }
 
