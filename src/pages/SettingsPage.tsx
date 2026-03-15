@@ -120,6 +120,9 @@ export default function SettingsPage() {
       allow_queue: settingsForm.allow_queue,
       show_announcements_on_entry: settingsForm.show_announcements_on_entry,
       entry_password: settingsForm.entry_password.trim() || null,
+      max_books_student: settingsForm.max_books_student,
+      max_books_teacher: settingsForm.max_books_teacher,
+      max_fine_limit: settingsForm.max_fine_limit,
       updated_at: new Date().toISOString(),
     } as any).eq('id', settings.id);
     setSavingSettings(false);
