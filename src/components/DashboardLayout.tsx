@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Briefcase, Library, BookCopy, Search, IndianRupee, Megaphone, Bell
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Briefcase, Library, BookCopy, Search, IndianRupee
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
