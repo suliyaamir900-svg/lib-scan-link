@@ -5,7 +5,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Briefcase, Library, BookCopy, Search, IndianRupee, Megaphone, Bell
+  LayoutDashboard, Users, QrCode, FileText, Settings, LogOut, BookOpen, Menu, X, Briefcase, Library, BookCopy, Search, IndianRupee
 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -22,8 +22,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     { to: '/book-issues', icon: BookCopy, label: 'Issue/Return' },
     { to: '/fines', icon: IndianRupee, label: 'Fines / जुर्माना' },
     { to: '/search', icon: Search, label: 'Search / खोज' },
-    { to: '/announcements', icon: Megaphone, label: 'Announcements' },
-    { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/qr-code', icon: QrCode, label: t('nav.qr_code') },
     { to: '/reports', icon: FileText, label: t('nav.reports') },
     { to: '/settings', icon: Settings, label: t('nav.settings') },

@@ -22,8 +22,6 @@ import SettingsPage from "./pages/SettingsPage";
 import StudentEntry from "./pages/StudentEntry";
 import StudentPortal from "./pages/StudentPortal";
 import SmartSearch from "./pages/SmartSearch";
-import Announcements from "./pages/Announcements";
-import Notifications from "./pages/Notifications";
 import FineTracker from "./pages/FineTracker";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -52,8 +50,6 @@ const App = () => (
               <Route path="/books" element={<Books />} />
               <Route path="/book-issues" element={<BookIssues />} />
               <Route path="/search" element={<SmartSearch />} />
-              <Route path="/announcements" element={<Announcements />} />
-              <Route path="/notifications" element={<Notifications />} />
               <Route path="/fines" element={<FineTracker />} />
               <Route path="/qr-code" element={<QRCodePage />} />
               <Route path="/reports" element={<Reports />} />
