@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase,
-  DoorOpen, BookOpen, AlertTriangle, Armchair, Trophy, Megaphone, IndianRupee, FileText,
-  Download, UserX, BookCopy, Activity, Database, Clock
+  DoorOpen, BookOpen, AlertTriangle, Trophy, Megaphone, IndianRupee, FileText,
+  Download, UserX, BookCopy, Activity
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -25,49 +25,76 @@ export default function Dashboard() {
   const [library, setLibrary] = useState<any>(null);
   const [entries, setEntries] = useState<any[]>([]);
   const [issues, setIssues] = useState<any[]>([]);
-  const [seats, setSeats] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [studentProfiles, setStudentProfiles] = useState<any[]>([]);
   const [teacherProfiles, setTeacherProfiles] = useState<any[]>([]);
   const [books, setBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
-    const fetchData = async () => {
-      const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
-      setLibrary(lib);
-      if (lib) {
-        const [entRes, issRes, seatRes, annRes, spRes, tpRes, booksRes] = await Promise.all([
-          supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
-          supabase.from('book_issues').select('*').eq('library_id', lib.id),
-          supabase.from('library_seats').select('*').eq('library_id', lib.id),
-          (supabase as any).from('announcements').select('*').eq('library_id', lib.id).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
-          (supabase as any).from('student_profiles').select('id, full_name, department, enrollment_number').eq('library_id', lib.id),
-          (supabase as any).from('teacher_profiles').select('id, full_name, department, employee_id').eq('library_id', lib.id),
-          supabase.from('books').select('id, title, total_copies, available_copies, status').eq('library_id', lib.id),
-        ]);
-        setEntries(entRes.data || []);
-        setIssues(issRes.data || []);
-        setSeats(seatRes.data || []);
-        setAnnouncements(annRes.data || []);
-        setStudentProfiles(spRes.data || []);
-        setTeacherProfiles(tpRes.data || []);
-        setBooks(booksRes.data || []);
-      }
-      setLoading(false);
-    };
+    const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
+    setLibrary(lib);
+    if (lib) {
+      const [entRes, issRes, annRes, spRes, tpRes, booksRes] = await Promise.all([
+        supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
+        supabase.from('book_issues').select('*').eq('library_id', lib.id),
+        (supabase as any).from('announcements').select('*').eq('library_id', lib.id).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
+        (supabase as any).from('student_profiles').select('id, full_name, department, enrollment_number, roll_number').eq('library_id', lib.id),
+        (supabase as any).from('teacher_profiles').select('id, full_name, department, employee_id').eq('library_id', lib.id),
+        supabase.from('books').select('id, title, total_copies, available_copies, status').eq('library_id', lib.id),
+      ]);
+      setEntries(entRes.data || []);
+      setIssues(issRes.data || []);
+      setAnnouncements(annRes.data || []);
+      setStudentProfiles(spRes.data || []);
+      setTeacherProfiles(tpRes.data || []);
+      setBooks(booksRes.data || []);
+    }
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // Realtime subscriptions for entries, issues, books
+  useEffect(() => {
+    if (!library) return;
 
     const channel = supabase
-      .channel('dashboard-entries')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_entries' }, (payload) => {
-        setEntries(prev => [payload.new as any, ...prev]);
+      .channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_entries', filter: `library_id=eq.${library.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setEntries(prev => [payload.new as any, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setEntries(prev => prev.map(e => e.id === (payload.new as any).id ? payload.new as any : e));
+        } else if (payload.eventType === 'DELETE') {
+          setEntries(prev => prev.filter(e => e.id !== (payload.old as any).id));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'book_issues', filter: `library_id=eq.${library.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setIssues(prev => [payload.new as any, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setIssues(prev => prev.map(i => i.id === (payload.new as any).id ? payload.new as any : i));
+        } else if (payload.eventType === 'DELETE') {
+          setIssues(prev => prev.filter(i => i.id !== (payload.old as any).id));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'books', filter: `library_id=eq.${library.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setBooks(prev => [payload.new as any, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setBooks(prev => prev.map(b => b.id === (payload.new as any).id ? payload.new as any : b));
+        } else if (payload.eventType === 'DELETE') {
+          setBooks(prev => prev.filter(b => b.id !== (payload.old as any).id));
+        }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [library?.id]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t('common.loading')}</div>;
   if (!user) return <Navigate to="/login" />;
@@ -89,7 +116,6 @@ export default function Dashboard() {
     const days = Math.floor((new Date(today).getTime() - new Date(i.return_date).getTime()) / 86400000);
     return sum + days * (i.fine_per_day || 5);
   }, 0);
-  const occupiedSeats = new Set(todayEntries.filter(e => e.seat_id && !e.exit_time).map(e => e.seat_id)).size;
   const issuedBooksCount = issues.filter(i => i.status === 'issued').length;
   const totalBooksCount = books.length;
   const totalCopies = books.reduce((s, b) => s + (b.total_copies || 0), 0);
@@ -144,7 +170,6 @@ export default function Dashboard() {
     toast.success('Book issues exported!');
   };
 
-  // Stats rows
   const mainStats = [
     { label: 'Registered Students', value: studentProfiles.length, icon: GraduationCap, gradient: 'gradient-primary' },
     { label: 'Registered Teachers', value: teacherProfiles.length, icon: Briefcase, gradient: 'gradient-accent' },
@@ -205,8 +230,13 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
-        {library && <p className="text-sm text-muted-foreground">{library.name} — {library.college_name}</p>}
+        <div>
+          <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
+          {library && <p className="text-sm text-muted-foreground">{library.name} — {library.college_name}</p>}
+        </div>
+        <Badge variant="outline" className="gap-1 text-xs animate-pulse border-green-500 text-green-600">
+          <Activity className="h-3 w-3" /> Live
+        </Badge>
       </div>
 
       {loading ? (
@@ -248,7 +278,7 @@ export default function Dashboard() {
           </div>
 
           {/* Alerts Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {/* Live Occupancy */}
             <Card className="shadow-card border-primary/20">
               <CardHeader className="pb-2">
@@ -265,27 +295,6 @@ export default function Dashboard() {
                       <p className="text-[9px] text-muted-foreground">{o.label}</p>
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Seat Status */}
-            <Card className="shadow-card border-primary/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Armchair className="h-4 w-4 text-primary" /> Seats
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-primary">{occupiedSeats}</p>
-                    <p className="text-[10px] text-muted-foreground">Occupied</p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-green-600">{Math.max(0, seats.length - occupiedSeats)}</p>
-                    <p className="text-[10px] text-muted-foreground">Free</p>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -486,7 +495,10 @@ export default function Dashboard() {
                             <p className="text-[10px] text-muted-foreground">{entry.department}</p>
                           </div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">{entry.entry_time?.slice(0, 5)}</p>
+                        <div className="text-right">
+                          <p className="text-[10px] text-muted-foreground">{entry.entry_time?.slice(0, 5)}</p>
+                          {entry.exit_time && <p className="text-[10px] text-green-600">Exit: {entry.exit_time?.slice(0, 5)}</p>}
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -19,21 +19,12 @@ import BookIssues from "./pages/BookIssues";
 import QRCodePage from "./pages/QRCode";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
-
 import StudentEntry from "./pages/StudentEntry";
 import StudentPortal from "./pages/StudentPortal";
-import SeatManagement from "./pages/SeatManagement";
 import SmartSearch from "./pages/SmartSearch";
-import Leaderboard from "./pages/Leaderboard";
 import Announcements from "./pages/Announcements";
 import Notifications from "./pages/Notifications";
 import FineTracker from "./pages/FineTracker";
-import VisitorLog from "./pages/VisitorLog";
-import StudyRooms from "./pages/StudyRooms";
-import LibraryEvents from "./pages/LibraryEvents";
-import Gamification from "./pages/Gamification";
-import BookRecommendations from "./pages/BookRecommendations";
-import SeatHeatmap from "./pages/SeatHeatmap";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -60,22 +51,13 @@ const App = () => (
               <Route path="/teachers" element={<Teachers />} />
               <Route path="/books" element={<Books />} />
               <Route path="/book-issues" element={<BookIssues />} />
-              <Route path="/seats" element={<SeatManagement />} />
-              <Route path="/seat-heatmap" element={<SeatHeatmap />} />
               <Route path="/search" element={<SmartSearch />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/announcements" element={<Announcements />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/fines" element={<FineTracker />} />
-              <Route path="/visitors" element={<VisitorLog />} />
-              <Route path="/study-rooms" element={<StudyRooms />} />
-              <Route path="/events" element={<LibraryEvents />} />
-              <Route path="/gamification" element={<Gamification />} />
-              <Route path="/recommendations" element={<BookRecommendations />} />
               <Route path="/qr-code" element={<QRCodePage />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<SettingsPage />} />
-              
               <Route path="/entry/:libraryId" element={<StudentEntry />} />
               <Route path="/portal/:libraryId" element={<StudentPortal />} />
               <Route path="/about" element={<About />} />
