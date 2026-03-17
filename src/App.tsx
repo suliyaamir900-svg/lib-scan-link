@@ -22,8 +22,6 @@ import SettingsPage from "./pages/SettingsPage";
 import StudentEntry from "./pages/StudentEntry";
 import StudentPortal from "./pages/StudentPortal";
 import SmartSearch from "./pages/SmartSearch";
-import Announcements from "./pages/Announcements";
-import Notifications from "./pages/Notifications";
 import FineTracker from "./pages/FineTracker";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
