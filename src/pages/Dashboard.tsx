@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase,
-  DoorOpen, BookOpen, AlertTriangle, Trophy, Megaphone, IndianRupee, FileText,
-  Download, UserX, BookCopy, Activity
+  DoorOpen, BookOpen, AlertTriangle, Trophy, IndianRupee, FileText,
+  Download, UserX, BookCopy, Activity, RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import LibraryTypeSetup from './LibraryTypeSetup';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
@@ -25,83 +25,65 @@ export default function Dashboard() {
   const [library, setLibrary] = useState<any>(null);
   const [entries, setEntries] = useState<any[]>([]);
   const [issues, setIssues] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [studentProfiles, setStudentProfiles] = useState<any[]>([]);
   const [teacherProfiles, setTeacherProfiles] = useState<any[]>([]);
   const [books, setBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
   const fetchData = useCallback(async () => {
     if (!user) return;
     const { data: lib } = await supabase.from('libraries').select('*').eq('user_id', user.id).maybeSingle();
     setLibrary(lib);
     if (lib) {
-      const [entRes, issRes, annRes, spRes, tpRes, booksRes] = await Promise.all([
+      const [entRes, issRes, spRes, tpRes, booksRes] = await Promise.all([
         supabase.from('student_entries').select('*').eq('library_id', lib.id).order('created_at', { ascending: false }),
         supabase.from('book_issues').select('*').eq('library_id', lib.id),
-        (supabase as any).from('announcements').select('*').eq('library_id', lib.id).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
         (supabase as any).from('student_profiles').select('id, full_name, department, enrollment_number, roll_number').eq('library_id', lib.id),
         (supabase as any).from('teacher_profiles').select('id, full_name, department, employee_id').eq('library_id', lib.id),
         supabase.from('books').select('id, title, total_copies, available_copies, status').eq('library_id', lib.id),
       ]);
       setEntries(entRes.data || []);
       setIssues(issRes.data || []);
-      setAnnouncements(annRes.data || []);
       setStudentProfiles(spRes.data || []);
       setTeacherProfiles(tpRes.data || []);
       setBooks(booksRes.data || []);
     }
     setLoading(false);
+    setLastRefresh(new Date());
   }, [user]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Realtime subscriptions for entries, issues, books
+  // Realtime subscriptions
   useEffect(() => {
     if (!library) return;
-
     const channel = supabase
       .channel('dashboard-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'student_entries', filter: `library_id=eq.${library.id}` }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setEntries(prev => [payload.new as any, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setEntries(prev => prev.map(e => e.id === (payload.new as any).id ? payload.new as any : e));
-        } else if (payload.eventType === 'DELETE') {
-          setEntries(prev => prev.filter(e => e.id !== (payload.old as any).id));
-        }
+        if (payload.eventType === 'INSERT') setEntries(prev => [payload.new as any, ...prev]);
+        else if (payload.eventType === 'UPDATE') setEntries(prev => prev.map(e => e.id === (payload.new as any).id ? payload.new as any : e));
+        else if (payload.eventType === 'DELETE') setEntries(prev => prev.filter(e => e.id !== (payload.old as any).id));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'book_issues', filter: `library_id=eq.${library.id}` }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setIssues(prev => [payload.new as any, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setIssues(prev => prev.map(i => i.id === (payload.new as any).id ? payload.new as any : i));
-        } else if (payload.eventType === 'DELETE') {
-          setIssues(prev => prev.filter(i => i.id !== (payload.old as any).id));
-        }
+        if (payload.eventType === 'INSERT') setIssues(prev => [payload.new as any, ...prev]);
+        else if (payload.eventType === 'UPDATE') setIssues(prev => prev.map(i => i.id === (payload.new as any).id ? payload.new as any : i));
+        else if (payload.eventType === 'DELETE') setIssues(prev => prev.filter(i => i.id !== (payload.old as any).id));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'books', filter: `library_id=eq.${library.id}` }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setBooks(prev => [payload.new as any, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setBooks(prev => prev.map(b => b.id === (payload.new as any).id ? payload.new as any : b));
-        } else if (payload.eventType === 'DELETE') {
-          setBooks(prev => prev.filter(b => b.id !== (payload.old as any).id));
-        }
+        if (payload.eventType === 'INSERT') setBooks(prev => [payload.new as any, ...prev]);
+        else if (payload.eventType === 'UPDATE') setBooks(prev => prev.map(b => b.id === (payload.new as any).id ? payload.new as any : b));
+        else if (payload.eventType === 'DELETE') setBooks(prev => prev.filter(b => b.id !== (payload.old as any).id));
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_profiles', filter: `library_id=eq.${library.id}` }, () => { fetchData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teacher_profiles', filter: `library_id=eq.${library.id}` }, () => { fetchData(); })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [library?.id]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{t('common.loading')}</div>;
   if (!user) return <Navigate to="/login" />;
-
-  if (library && !library.library_type) {
-    return <LibraryTypeSetup libraryId={library.id} onDone={(type) => setLibrary({ ...library, library_type: type })} />;
-  }
+  if (library && !library.library_type) return <LibraryTypeSetup libraryId={library.id} onDone={(type) => setLibrary({ ...library, library_type: type })} />;
 
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
@@ -134,7 +116,6 @@ export default function Dashboard() {
     XLSX.writeFile(wb, `students-${today}.xlsx`);
     toast.success('Student list exported!');
   };
-
   const exportTeacherList = () => {
     const data = teacherProfiles.map((t: any, i: number) => ({ 'S.No': i + 1, Name: t.full_name, Department: t.department || '-', 'Employee ID': t.employee_id || '-' }));
     const ws = XLSX.utils.json_to_sheet(data);
@@ -143,7 +124,6 @@ export default function Dashboard() {
     XLSX.writeFile(wb, `teachers-${today}.xlsx`);
     toast.success('Teacher list exported!');
   };
-
   const exportEntryLogs = () => {
     const data = entries.map((e: any, i: number) => ({
       'S.No': i + 1, Name: e.student_name, Department: e.department, 'Roll/ID': e.roll_number,
@@ -156,12 +136,10 @@ export default function Dashboard() {
     XLSX.writeFile(wb, `entry-logs-${today}.xlsx`);
     toast.success('Entry logs exported!');
   };
-
   const exportBookIssues = () => {
     const data = issues.map((i: any, idx: number) => ({
       'S.No': idx + 1, Borrower: i.borrower_name, 'Borrower ID': i.borrower_id, Type: i.borrower_type,
-      'Issue Date': i.issue_date, 'Due Date': i.return_date, Status: i.status,
-      'Fine (₹)': i.fine_amount || 0,
+      'Issue Date': i.issue_date, 'Due Date': i.return_date, Status: i.status, 'Fine (₹)': i.fine_amount || 0,
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -216,16 +194,30 @@ export default function Dashboard() {
     };
   });
 
+  // Monthly trend (last 30 days grouped by week)
+  const last30 = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(Date.now() - (29 - i) * 86400000);
+    return d.toISOString().split('T')[0];
+  });
+  const weeklyTrend = [0, 1, 2, 3].map(week => {
+    const weekDates = last30.slice(week * 7, (week + 1) * 7);
+    const count = entries.filter(e => weekDates.includes(e.entry_date)).length;
+    const studyMins = entries.filter(e => weekDates.includes(e.entry_date)).reduce((s, e) => s + (e.study_minutes || 0), 0);
+    return { name: `Week ${week + 1}`, entries: count, hours: Math.round(studyMins / 60) };
+  });
+
   // Top visitors
-  const visitorMap: Record<string, { name: string; count: number }> = {};
+  const visitorMap: Record<string, { name: string; count: number; dept: string }> = {};
   entries.forEach(e => {
     const key = e.roll_number;
-    if (!visitorMap[key]) visitorMap[key] = { name: e.student_name, count: 0 };
+    if (!visitorMap[key]) visitorMap[key] = { name: e.student_name, count: 0, dept: e.department };
     visitorMap[key].count++;
   });
   const topVisitors = Object.values(visitorMap).sort((a, b) => b.count - a.count).slice(0, 5);
-
   const recentEntries = entries.slice(0, 8);
+
+  // Total study hours
+  const totalStudyHours = Math.round(entries.reduce((s, e) => s + (e.study_minutes || 0), 0) / 60);
 
   return (
     <DashboardLayout>
@@ -234,9 +226,14 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
           {library && <p className="text-sm text-muted-foreground">{library.name} — {library.college_name}</p>}
         </div>
-        <Badge variant="outline" className="gap-1 text-xs animate-pulse border-green-500 text-green-600">
-          <Activity className="h-3 w-3" /> Live
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={fetchData} className="h-8 w-8">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Badge variant="outline" className="gap-1 text-xs animate-pulse border-green-500 text-green-600">
+            <Activity className="h-3 w-3" /> Live
+          </Badge>
+        </div>
       </div>
 
       {loading ? (
@@ -278,7 +275,7 @@ export default function Dashboard() {
           </div>
 
           {/* Alerts Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Live Occupancy */}
             <Card className="shadow-card border-primary/20">
               <CardHeader className="pb-2">
@@ -303,7 +300,7 @@ export default function Dashboard() {
             <Card className={`shadow-card ${overdueBooks > 0 ? 'border-destructive/30' : 'border-primary/20'}`}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-primary" /> Books
+                  <BookOpen className="h-4 w-4 text-primary" /> Books Summary
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -329,7 +326,22 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Inactive Students Alert */}
+            {/* Fines */}
+            <Link to="/fines">
+              <Card className="shadow-card border-destructive/20 hover:border-destructive/40 transition-colors cursor-pointer h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <IndianRupee className="h-4 w-4 text-destructive" /> Active Fines
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-destructive">₹{totalFines}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{overdueBooks} overdue • ₹{issues[0]?.fine_per_day || 5}/day</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Inactive Students */}
             <Card className={`shadow-card ${inactiveStudents.length > 0 ? 'border-orange-300' : 'border-primary/20'}`}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -337,12 +349,9 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center p-3 rounded-lg bg-muted/50">
-                  <p className={`text-2xl font-bold ${inactiveStudents.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>{inactiveStudents.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Inactive Students</p>
-                </div>
+                <p className={`text-3xl font-bold ${inactiveStudents.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>{inactiveStudents.length}</p>
                 {inactiveStudents.length > 0 && (
-                  <div className="mt-2 text-[10px] text-muted-foreground max-h-12 overflow-y-auto">
+                  <div className="mt-1 text-[10px] text-muted-foreground max-h-12 overflow-y-auto">
                     {inactiveStudents.slice(0, 3).map((s: any) => (
                       <p key={s.id} className="truncate">{s.full_name} • {s.department}</p>
                     ))}
@@ -407,26 +416,24 @@ export default function Dashboard() {
 
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle className="text-lg">User Type / प्रकार</CardTitle>
+                <CardTitle className="text-lg">Monthly Trend</CardTitle>
               </CardHeader>
               <CardContent>
-                {typeData.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-sm py-10">No data yet</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie data={typeData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} fontSize={11}>
-                        {typeData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={weeklyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 88%)" />
+                    <XAxis dataKey="name" fontSize={11} />
+                    <YAxis fontSize={11} allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="entries" name="Entries" stroke="hsl(250, 80%, 60%)" strokeWidth={2} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="hours" name="Study Hours" stroke="hsl(160, 70%, 45%)" strokeWidth={2} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Department */}
             <Card className="shadow-card">
               <CardHeader>
@@ -461,8 +468,13 @@ export default function Dashboard() {
                     {topVisitors.map((v, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-bold w-5 text-center ${i === 0 ? 'text-yellow-500' : 'text-muted-foreground'}`}>{i + 1}</span>
-                          <span className="text-sm font-medium truncate">{v.name}</span>
+                          <span className={`text-xs font-bold w-5 text-center ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-gray-400' : 'text-muted-foreground'}`}>
+                            {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                          </span>
+                          <div>
+                            <span className="text-sm font-medium truncate">{v.name}</span>
+                            <p className="text-[9px] text-muted-foreground">{v.dept}</p>
+                          </div>
                         </div>
                         <span className="text-sm font-bold text-primary">{v.count}</span>
                       </div>
@@ -497,7 +509,8 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right">
                           <p className="text-[10px] text-muted-foreground">{entry.entry_time?.slice(0, 5)}</p>
-                          {entry.exit_time && <p className="text-[10px] text-green-600">Exit: {entry.exit_time?.slice(0, 5)}</p>}
+                          {entry.exit_time ? <p className="text-[10px] text-green-600">Exit: {entry.exit_time?.slice(0, 5)}</p>
+                            : <Badge variant="outline" className="text-[8px] py-0 border-green-500 text-green-600">Inside</Badge>}
                         </div>
                       </div>
                     ))}
@@ -507,56 +520,30 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Fines & Announcements Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <Link to="/fines">
-              <Card className="shadow-card border-destructive/20 hover:border-destructive/40 transition-colors cursor-pointer">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <IndianRupee className="h-5 w-5 text-destructive" /> Active Fines / सक्रिय जुर्माना
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-3xl font-bold text-destructive">₹{totalFines}</p>
-                      <p className="text-sm text-muted-foreground">{overdueBooks} overdue books</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-muted-foreground">Per day rate</p>
-                      <p className="text-lg font-bold text-orange-600">₹{issues[0]?.fine_per_day || 5}/book</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Card className="shadow-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Megaphone className="h-5 w-5 text-primary" /> Announcements / घोषणाएं
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {announcements.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-sm py-6">No announcements</p>
-                ) : (
-                  <div className="space-y-2">
-                    {announcements.slice(0, 4).map((a: any) => (
-                      <div key={a.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                        <Megaphone className="h-3 w-3 text-primary shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{a.title}</p>
-                          <p className="text-[10px] text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    ))}
-                    <Link to="/announcements" className="text-xs text-primary hover:underline">View all →</Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          {/* Quick Stats Footer */}
+          <Card className="shadow-card">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="text-center p-3 rounded-lg bg-primary/5">
+                  <p className="text-xl font-bold text-primary">{totalStudyHours}h</p>
+                  <p className="text-xs text-muted-foreground">Total Study Hours</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-accent/5">
+                  <p className="text-xl font-bold text-accent">{totalCopies}</p>
+                  <p className="text-xs text-muted-foreground">Total Copies</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-secondary/5">
+                  <p className="text-xl font-bold text-secondary">{new Set(entries.map(e => e.roll_number)).size}</p>
+                  <p className="text-xs text-muted-foreground">Unique Visitors</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted">
+                  <p className="text-xl font-bold">{deptData[0]?.name || '-'}</p>
+                  <p className="text-xs text-muted-foreground">Top Department</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-right mt-2">Last refreshed: {lastRefresh.toLocaleTimeString()}</p>
+            </CardContent>
+          </Card>
         </>
       )}
     </DashboardLayout>
