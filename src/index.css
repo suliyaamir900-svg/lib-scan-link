@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -30,13 +30,13 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 88%;
+    --border: 220 15% 90%;
     --input: 220 15% 88%;
     --ring: 250 80% 60%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 240 20% 99%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 250 80% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -49,8 +49,11 @@
     --gradient-accent: linear-gradient(135deg, hsl(320 75% 55%), hsl(250 80% 60%));
     --gradient-warm: linear-gradient(135deg, hsl(30 90% 55%), hsl(350 80% 55%));
     --gradient-success: linear-gradient(135deg, hsl(160 70% 45%), hsl(200 90% 55%));
+    --gradient-gold: linear-gradient(135deg, hsl(45 100% 51%), hsl(30 90% 55%));
     --shadow-primary: 0 10px 40px -10px hsl(250 80% 60% / 0.35);
-    --shadow-card: 0 4px 20px -4px hsl(230 25% 10% / 0.08);
+    --shadow-card: 0 1px 3px 0 hsl(230 25% 10% / 0.04), 0 1px 2px -1px hsl(230 25% 10% / 0.04);
+    --shadow-card-hover: 0 10px 25px -5px hsl(230 25% 10% / 0.08), 0 4px 6px -2px hsl(230 25% 10% / 0.04);
+    --shadow-elevated: 0 20px 60px -15px hsl(230 25% 10% / 0.12);
   }
 
   .dark {
@@ -100,7 +103,25 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Poppins', 'Noto Sans Devanagari', sans-serif;
+    font-family: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
   }
 }
 
@@ -117,14 +138,79 @@
   .gradient-success {
     background: var(--gradient-success);
   }
+  .gradient-gold {
+    background: var(--gradient-gold);
+  }
   .shadow-primary {
     box-shadow: var(--shadow-primary);
   }
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
-  .glass {
-    backdrop-filter: blur(12px);
-    background: hsl(var(--card) / 0.7);
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
   }
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  .glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    background: hsl(var(--card) / 0.75);
+  }
+  .glass-heavy {
+    backdrop-filter: blur(24px) saturate(200%);
+    background: hsl(var(--card) / 0.85);
+  }
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-text-accent {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-glow {
+    animation: glow 3s ease-in-out infinite alternate;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5;
+  }
+  .gradient-border {
+    position: relative;
+    border: none;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--gradient-primary);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px hsl(250 80% 60% / 0.15); }
+  to { box-shadow: 0 0 40px hsl(250 80% 60% / 0.3); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
