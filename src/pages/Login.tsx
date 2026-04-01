@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { BookOpen, Loader2, Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { motion } from 'framer-motion';
 
 export default function Login() {
   const { t } = useLanguage();
@@ -34,13 +35,9 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) {
-      if (error.message.includes('Invalid login')) {
-        toast.error('Invalid email or password / गलत ईमेल या पासवर्ड');
-      } else if (error.message.includes('Email not confirmed')) {
-        toast.error('Please verify your email first / पहले अपना ईमेल वेरिफाई करें');
-      } else {
-        toast.error(error.message);
-      }
+      if (error.message.includes('Invalid login')) toast.error('Invalid email or password / गलत ईमेल या पासवर्ड');
+      else if (error.message.includes('Email not confirmed')) toast.error('Please verify your email first / पहले अपना ईमेल वेरिफाई करें');
+      else toast.error(error.message);
     } else {
       toast.success('Welcome back! / वापस स्वागत है!');
       navigate('/dashboard');
@@ -49,75 +46,63 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-background">
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-10 w-72 h-72 rounded-full gradient-primary blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full gradient-accent blur-3xl" />
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-primary/8 blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-accent/8 blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+      </div>
+      <div className="absolute top-4 left-4">
+        <Link to="/">
+          <Button variant="ghost" size="sm" className="gap-1"><ArrowLeft className="h-4 w-4" /> Home</Button>
+        </Link>
       </div>
       <div className="absolute top-4 right-4">
         <LanguageToggle />
       </div>
-      <Card className="w-full max-w-md shadow-card border-border/50 relative z-10">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-3">
-            <div className="h-14 w-14 rounded-xl gradient-primary flex items-center justify-center shadow-primary">
-              <BookOpen className="h-7 w-7 text-primary-foreground" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl">{t('auth.login')}</CardTitle>
-          <CardDescription>{t('app.name')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="pl-10"
-                  required
-                />
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-md">
+        <Card className="shadow-elevated border-border/50 relative z-10 overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-primary via-secondary to-accent" />
+          <CardHeader className="text-center pt-8">
+            <div className="flex justify-center mb-4">
+              <div className="h-14 w-14 rounded-2xl gradient-primary flex items-center justify-center shadow-primary">
+                <BookOpen className="h-7 w-7 text-primary-foreground" />
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password">{t('auth.password')}</Label>
-                <Link to="/forgot-password" className="text-xs text-primary hover:underline">{t('auth.forgot_password')}</Link>
+            <CardTitle className="text-2xl font-bold">{t('auth.login')}</CardTitle>
+            <CardDescription>{t('app.name')}</CardDescription>
+          </CardHeader>
+          <CardContent className="pb-8">
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email">{t('auth.email')}</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="pl-10 h-11 rounded-xl" required />
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="pl-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="password">{t('auth.password')}</Label>
+                  <Link to="/forgot-password" className="text-xs text-primary hover:underline font-medium">{t('auth.forgot_password')}</Link>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="pl-10 pr-10 h-11 rounded-xl" required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-            </div>
-            <Button type="submit" className="w-full gradient-primary text-primary-foreground shadow-primary h-11 text-base" disabled={loading}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('auth.login')}
-            </Button>
-          </form>
-          <p className="text-center text-sm mt-5 text-muted-foreground">
-            {t('auth.no_account')}{' '}
-            <Link to="/signup" className="text-primary font-semibold hover:underline">{t('auth.signup')}</Link>
-          </p>
-        </CardContent>
-      </Card>
+              <Button type="submit" className="w-full gradient-primary text-primary-foreground shadow-primary h-11 text-base rounded-xl font-semibold" disabled={loading}>
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('auth.login')}
+              </Button>
+            </form>
+            <p className="text-center text-sm mt-6 text-muted-foreground">
+              {t('auth.no_account')}{' '}
+              <Link to="/signup" className="text-primary font-semibold hover:underline">{t('auth.signup')}</Link>
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
