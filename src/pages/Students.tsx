@@ -542,26 +542,29 @@ export default function Students() {
                 </TableHeader>
                 <TableBody>
                   {pageEntries.map((p: any) => (
-                    <TableRow key={p.id} className={`cursor-pointer ${selected.has(p.id) ? 'bg-primary/5' : ''}`}>
+                    <TableRow key={p.id} className={`cursor-pointer table-row-hover ${selected.has(p.id) ? 'bg-primary/5' : ''}`}>
                       <TableCell><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" /></TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2" onClick={() => openProfile(p)}>
-                          <Avatar className="h-8 w-8">
+                        <div className="flex items-center gap-3" onClick={() => openProfile(p)}>
+                          <Avatar className="h-9 w-9 ring-2 ring-primary/10">
                             {p.photo_url ? <AvatarImage src={p.photo_url} /> : null}
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">{(p.full_name || '?')[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">{(p.full_name || '?')[0]}</AvatarFallback>
                           </Avatar>
-                          <span className="font-medium text-sm hover:text-primary">{p.full_name}</span>
+                          <div>
+                            <span className="font-semibold text-sm hover:text-primary transition-colors">{p.full_name}</span>
+                            {p.email && <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{p.email}</p>}
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell><span className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">{p.department || '-'}</span></TableCell>
-                      <TableCell className="text-sm">{p.enrollment_number || '-'}</TableCell>
+                      <TableCell><span className="px-2.5 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">{p.department || '-'}</span></TableCell>
+                      <TableCell className="text-sm font-mono">{p.enrollment_number || '-'}</TableCell>
                       <TableCell className="text-sm">{p.roll_number || '-'}</TableCell>
                       <TableCell className="text-sm">{p.mobile || '-'}</TableCell>
                       <TableCell className="text-sm">{p.batch_year || '-'}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openProfile(p)}><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete([p.id])} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => openProfile(p)} className="hover:text-primary hover:bg-primary/5"><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete([p.id])} className="text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
