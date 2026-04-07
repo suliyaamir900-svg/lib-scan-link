@@ -286,17 +286,17 @@ export default function Students() {
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {[
-                { label: 'Total Visits', value: totalVisits, icon: Eye, color: 'text-primary' },
-                { label: 'Study Time', value: `${Math.floor(totalStudyMins / 60)}h ${totalStudyMins % 60}m`, icon: Clock, color: 'text-secondary' },
-                { label: 'Currently Issued', value: currentIssues.length, icon: BookOpen, color: 'text-accent' },
-                { label: 'Books Returned', value: returnedIssues.length, icon: BookOpen, color: 'text-primary' },
-                { label: 'Total Books Borrowed', value: profileBookIssues.length, icon: BookOpen, color: 'text-secondary' },
-                { label: 'Total Fines', value: `₹${totalFines}`, icon: IndianRupee, color: 'text-destructive' },
+                { label: 'Total Visits', value: totalVisits, icon: Eye, color: 'text-primary', gradient: 'gradient-primary' },
+                { label: 'Study Time', value: `${Math.floor(totalStudyMins / 60)}h ${totalStudyMins % 60}m`, icon: Clock, color: 'text-secondary', gradient: 'gradient-accent' },
+                { label: 'Currently Issued', value: currentIssues.length, icon: BookOpen, color: 'text-accent', gradient: 'gradient-warm' },
+                { label: 'Books Returned', value: returnedIssues.length, icon: BookOpen, color: 'text-primary', gradient: 'gradient-success' },
+                { label: 'Total Borrowed', value: profileBookIssues.length, icon: BookOpen, color: 'text-secondary', gradient: 'gradient-primary' },
+                { label: 'Total Fines', value: `₹${totalFines}`, icon: IndianRupee, color: 'text-destructive', gradient: 'gradient-warm' },
               ].map(s => (
-                <Card key={s.label} className="shadow-sm overflow-hidden">
-                  <div className="h-0.5 bg-gradient-to-r from-primary to-secondary" />
+                <Card key={s.label} className="stat-card overflow-hidden group">
+                  <div className={`h-1 ${s.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
                   <CardContent className="p-3 text-center">
-                    <s.icon className={`h-5 w-5 mx-auto mb-1 ${s.color}`} />
+                    <s.icon className={`h-5 w-5 mx-auto mb-1.5 ${s.color} group-hover:scale-110 transition-transform`} />
                     <p className="text-lg font-bold">{s.value}</p>
                     <p className="text-[10px] text-muted-foreground">{s.label}</p>
                   </CardContent>
