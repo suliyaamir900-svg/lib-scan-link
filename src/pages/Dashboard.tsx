@@ -243,9 +243,10 @@ export default function Dashboard() {
           {/* ── SMART SUMMARY ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {mainStats.map((s, i) => (
-              <Card key={i} className="shadow-card border-border/50 overflow-hidden">
+              <Card key={i} className="stat-card border-border/50 overflow-hidden group">
+                <div className={`h-1 ${s.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
                 <CardContent className="p-4 flex items-center gap-3">
-                  <div className={`h-11 w-11 rounded-xl ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <div className={`h-11 w-11 rounded-xl ${s.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                     <s.icon className="h-5 w-5 text-primary-foreground" />
                   </div>
                   <div>
@@ -260,9 +261,9 @@ export default function Dashboard() {
           {/* Activity Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {activityStats.map((s, i) => (
-              <Card key={i} className="shadow-card border-border/50 overflow-hidden">
+              <Card key={i} className="stat-card border-border/50 overflow-hidden group">
                 <CardContent className="p-4 flex items-center gap-3">
-                  <div className={`h-10 w-10 rounded-lg ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <div className={`h-10 w-10 rounded-lg ${s.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                     <s.icon className="h-5 w-5 text-primary-foreground" />
                   </div>
                   <div>
@@ -521,27 +522,28 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Stats Footer */}
-          <Card className="shadow-card">
-            <CardContent className="p-4">
+          <Card className="shadow-card overflow-hidden">
+            <div className="h-1 gradient-primary" />
+            <CardContent className="p-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="text-center p-3 rounded-lg bg-primary/5">
-                  <p className="text-xl font-bold text-primary">{totalStudyHours}h</p>
-                  <p className="text-xs text-muted-foreground">Total Study Hours</p>
+                <div className="text-center p-4 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors">
+                  <p className="text-2xl font-bold gradient-text">{totalStudyHours}h</p>
+                  <p className="text-xs text-muted-foreground mt-1">Total Study Hours</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-accent/5">
-                  <p className="text-xl font-bold text-accent">{totalCopies}</p>
-                  <p className="text-xs text-muted-foreground">Total Copies</p>
+                <div className="text-center p-4 rounded-xl bg-accent/5 hover:bg-accent/10 transition-colors">
+                  <p className="text-2xl font-bold text-accent">{totalCopies}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Total Book Copies</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-secondary/5">
-                  <p className="text-xl font-bold text-secondary">{new Set(entries.map(e => e.roll_number)).size}</p>
-                  <p className="text-xs text-muted-foreground">Unique Visitors</p>
+                <div className="text-center p-4 rounded-xl bg-secondary/5 hover:bg-secondary/10 transition-colors">
+                  <p className="text-2xl font-bold text-secondary">{new Set(entries.map(e => e.roll_number)).size}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Unique Visitors</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-muted">
-                  <p className="text-xl font-bold">{deptData[0]?.name || '-'}</p>
-                  <p className="text-xs text-muted-foreground">Top Department</p>
+                <div className="text-center p-4 rounded-xl bg-muted hover:bg-muted/80 transition-colors">
+                  <p className="text-2xl font-bold">{deptData[0]?.name || '-'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Top Department</p>
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground text-right mt-2">Last refreshed: {lastRefresh.toLocaleTimeString()}</p>
+              <p className="text-[10px] text-muted-foreground text-right mt-3">Last refreshed: {lastRefresh.toLocaleTimeString()}</p>
             </CardContent>
           </Card>
         </>

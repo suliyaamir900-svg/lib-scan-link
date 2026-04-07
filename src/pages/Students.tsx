@@ -286,17 +286,17 @@ export default function Students() {
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {[
-                { label: 'Total Visits', value: totalVisits, icon: Eye, color: 'text-primary' },
-                { label: 'Study Time', value: `${Math.floor(totalStudyMins / 60)}h ${totalStudyMins % 60}m`, icon: Clock, color: 'text-secondary' },
-                { label: 'Currently Issued', value: currentIssues.length, icon: BookOpen, color: 'text-accent' },
-                { label: 'Books Returned', value: returnedIssues.length, icon: BookOpen, color: 'text-primary' },
-                { label: 'Total Books Borrowed', value: profileBookIssues.length, icon: BookOpen, color: 'text-secondary' },
-                { label: 'Total Fines', value: `₹${totalFines}`, icon: IndianRupee, color: 'text-destructive' },
+                { label: 'Total Visits', value: totalVisits, icon: Eye, color: 'text-primary', gradient: 'gradient-primary' },
+                { label: 'Study Time', value: `${Math.floor(totalStudyMins / 60)}h ${totalStudyMins % 60}m`, icon: Clock, color: 'text-secondary', gradient: 'gradient-accent' },
+                { label: 'Currently Issued', value: currentIssues.length, icon: BookOpen, color: 'text-accent', gradient: 'gradient-warm' },
+                { label: 'Books Returned', value: returnedIssues.length, icon: BookOpen, color: 'text-primary', gradient: 'gradient-success' },
+                { label: 'Total Borrowed', value: profileBookIssues.length, icon: BookOpen, color: 'text-secondary', gradient: 'gradient-primary' },
+                { label: 'Total Fines', value: `₹${totalFines}`, icon: IndianRupee, color: 'text-destructive', gradient: 'gradient-warm' },
               ].map(s => (
-                <Card key={s.label} className="shadow-sm overflow-hidden">
-                  <div className="h-0.5 bg-gradient-to-r from-primary to-secondary" />
+                <Card key={s.label} className="stat-card overflow-hidden group">
+                  <div className={`h-1 ${s.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
                   <CardContent className="p-3 text-center">
-                    <s.icon className={`h-5 w-5 mx-auto mb-1 ${s.color}`} />
+                    <s.icon className={`h-5 w-5 mx-auto mb-1.5 ${s.color} group-hover:scale-110 transition-transform`} />
                     <p className="text-lg font-bold">{s.value}</p>
                     <p className="text-[10px] text-muted-foreground">{s.label}</p>
                   </CardContent>
@@ -542,26 +542,29 @@ export default function Students() {
                 </TableHeader>
                 <TableBody>
                   {pageEntries.map((p: any) => (
-                    <TableRow key={p.id} className={`cursor-pointer ${selected.has(p.id) ? 'bg-primary/5' : ''}`}>
+                    <TableRow key={p.id} className={`cursor-pointer table-row-hover ${selected.has(p.id) ? 'bg-primary/5' : ''}`}>
                       <TableCell><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" /></TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2" onClick={() => openProfile(p)}>
-                          <Avatar className="h-8 w-8">
+                        <div className="flex items-center gap-3" onClick={() => openProfile(p)}>
+                          <Avatar className="h-9 w-9 ring-2 ring-primary/10">
                             {p.photo_url ? <AvatarImage src={p.photo_url} /> : null}
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">{(p.full_name || '?')[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">{(p.full_name || '?')[0]}</AvatarFallback>
                           </Avatar>
-                          <span className="font-medium text-sm hover:text-primary">{p.full_name}</span>
+                          <div>
+                            <span className="font-semibold text-sm hover:text-primary transition-colors">{p.full_name}</span>
+                            {p.email && <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{p.email}</p>}
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell><span className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">{p.department || '-'}</span></TableCell>
-                      <TableCell className="text-sm">{p.enrollment_number || '-'}</TableCell>
+                      <TableCell><span className="px-2.5 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">{p.department || '-'}</span></TableCell>
+                      <TableCell className="text-sm font-mono">{p.enrollment_number || '-'}</TableCell>
                       <TableCell className="text-sm">{p.roll_number || '-'}</TableCell>
                       <TableCell className="text-sm">{p.mobile || '-'}</TableCell>
                       <TableCell className="text-sm">{p.batch_year || '-'}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openProfile(p)}><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete([p.id])} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => openProfile(p)} className="hover:text-primary hover:bg-primary/5"><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete([p.id])} className="text-destructive hover:bg-destructive/5"><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
