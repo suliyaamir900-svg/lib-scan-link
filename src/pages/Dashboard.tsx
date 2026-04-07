@@ -243,9 +243,10 @@ export default function Dashboard() {
           {/* ── SMART SUMMARY ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {mainStats.map((s, i) => (
-              <Card key={i} className="shadow-card border-border/50 overflow-hidden">
+              <Card key={i} className="stat-card border-border/50 overflow-hidden group">
+                <div className={`h-1 ${s.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
                 <CardContent className="p-4 flex items-center gap-3">
-                  <div className={`h-11 w-11 rounded-xl ${s.gradient} flex items-center justify-center shrink-0`}>
+                  <div className={`h-11 w-11 rounded-xl ${s.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                     <s.icon className="h-5 w-5 text-primary-foreground" />
                   </div>
                   <div>
