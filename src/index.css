@@ -146,6 +146,10 @@
   }
   .shadow-card {
     box-shadow: var(--shadow-card);
+    @apply transition-all duration-300;
+  }
+  .shadow-card:hover {
+    box-shadow: var(--shadow-card-hover);
   }
   .shadow-card-hover {
     box-shadow: var(--shadow-card-hover);
@@ -181,6 +185,15 @@
   }
   .card-hover {
     @apply transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5;
+  }
+  .stat-card {
+    @apply transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 cursor-default;
+  }
+  .table-row-hover {
+    @apply transition-colors duration-150 hover:bg-muted/50;
+  }
+  .btn-float {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0;
   }
   .gradient-border {
     position: relative;
