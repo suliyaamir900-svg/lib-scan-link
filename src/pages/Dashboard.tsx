@@ -14,6 +14,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import LibraryTypeSetup from './LibraryTypeSetup';
+import LiveOccupancy from '@/components/dashboard/LiveOccupancy';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
