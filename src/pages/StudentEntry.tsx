@@ -361,10 +361,11 @@ export default function StudentEntry() {
     const now = new Date();
     const exitTime = getExactTime();
 
+    // Real-time precise study duration calculation (includes seconds)
     const entryParts = activeEntry.entry_time.split(':');
-    const entryMinutes = parseInt(entryParts[0]) * 60 + parseInt(entryParts[1]);
-    const exitMinutes = now.getHours() * 60 + now.getMinutes();
-    const studyMins = Math.max(0, exitMinutes - entryMinutes);
+    const entrySeconds = parseInt(entryParts[0]) * 3600 + parseInt(entryParts[1]) * 60 + parseInt(entryParts[2] || '0');
+    const exitSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const studyMins = Math.max(0, Math.round((exitSeconds - entrySeconds) / 60));
 
     const { error } = await supabase.from('student_entries').update({
       exit_time: exitTime,
