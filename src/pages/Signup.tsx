@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
@@ -12,47 +12,17 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 
-export default function Signup() {
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({
-    libraryName: '', collegeName: '', adminName: '', email: '', phone: '', password: '', confirmPassword: '',
-  });
-
-  useEffect(() => {
-    if (user) navigate('/dashboard');
-  }, [user, navigate]);
-
-  const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (form.password !== form.confirmPassword) { toast.error('Passwords do not match / पासवर्ड मेल नहीं खाते'); return; }
-    if (form.password.length < 6) { toast.error('Password must be at least 6 characters / पासवर्ड कम से कम 6 अक्षर'); return; }
-
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: form.email.trim(), password: form.password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { library_name: form.libraryName.trim(), college_name: form.collegeName.trim(), admin_name: form.adminName.trim(), phone: form.phone.trim() },
-      },
-    });
-    setLoading(false);
-
-    if (error) toast.error(error.message);
-    else { toast.success('Account created! Check your email to verify. / अकाउंट बन गया! ईमेल वेरिफाई करें।'); navigate('/login'); }
-  };
-
-  const InputWithIcon = ({ icon: Icon, ...props }: any) => (
+const InputWithIcon = forwardRef<HTMLInputElement, React.ComponentProps<typeof Input> & { icon: React.ElementType }>(
+  ({ icon: Icon, className, ...props }, ref) => (
     <div className="relative">
       <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <Input {...props} className="pl-10 h-11 rounded-xl" />
+      <Input ref={ref} {...props} className={["pl-10 h-11 rounded-xl", className].filter(Boolean).join(' ')} />
     </div>
-  );
+  )
+);
+
+InputWithIcon.displayName = 'InputWithIcon';
+...
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden bg-background">
