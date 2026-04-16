@@ -2,6 +2,8 @@ import { ReactNode, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import ThemeToggle from '@/components/ThemeToggle';
+import CommandPalette from '@/components/CommandPalette';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -127,12 +129,26 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: true });
+                document.dispatchEvent(event);
+              }}
+              className="hidden md:flex items-center gap-2 px-3 h-8 rounded-lg bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-all text-xs"
+              title="Quick search (Ctrl/Cmd + K)"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span>Search...</span>
+              <kbd className="ml-2 px-1.5 py-0.5 text-[9px] font-mono rounded bg-background border">⌘K</kbd>
+            </button>
             <Badge variant="outline" className="hidden sm:flex gap-1 text-[10px] border-green-500/30 text-green-600 py-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> Online
             </Badge>
+            <ThemeToggle />
             <LanguageToggle />
           </div>
         </header>
+        <CommandPalette />
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
