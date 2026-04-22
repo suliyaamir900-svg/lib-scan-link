@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import ThemeToggle from '@/components/ThemeToggle';
 import CommandPalette from '@/components/CommandPalette';
+import NotificationBell from '@/components/NotificationBell';
+import QuickActionFAB from '@/components/QuickActionFAB';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -144,6 +146,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             <Badge variant="outline" className="hidden sm:flex gap-1 text-[10px] border-green-500/30 text-green-600 py-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> Online
             </Badge>
+            <NotificationBell />
             <ThemeToggle />
             <LanguageToggle />
           </div>
@@ -152,6 +155,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
+        <QuickActionFAB />
       </div>
     </div>
   );

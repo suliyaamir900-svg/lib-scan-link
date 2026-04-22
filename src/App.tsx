@@ -13,6 +13,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
+import StudentDetail from "./pages/StudentDetail";
 import Teachers from "./pages/Teachers";
 import Books from "./pages/Books";
 import BookIssues from "./pages/BookIssues";
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/students" element={<Students />} />
+              <Route path="/students/:id" element={<StudentDetail />} />
               <Route path="/teachers" element={<Teachers />} />
               <Route path="/books" element={<Books />} />
               <Route path="/book-issues" element={<BookIssues />} />
