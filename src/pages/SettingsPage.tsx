@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Settings, Save, Loader2, Library, Building2, User, Phone, Mail, Lock,
   Armchair, BookOpen, Users, GraduationCap, X, Plus, Clock,
-  IndianRupee, Monitor, Download, Apple, Github
+  IndianRupee
 } from 'lucide-react';
 import { toast } from 'sonner';
 
