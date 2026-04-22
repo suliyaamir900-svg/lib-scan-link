@@ -569,21 +569,21 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
-                  <Monitor className="h-5 w-5 text-blue-500" />
+                  <Monitor className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm font-semibold">Windows</p>
                     <p className="text-[11px] text-muted-foreground">.exe installer</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
-                  <Apple className="h-5 w-5" />
+                  <Apple className="h-5 w-5 text-foreground" />
                   <div>
                     <p className="text-sm font-semibold">macOS</p>
                     <p className="text-[11px] text-muted-foreground">.dmg package</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
-                  <Download className="h-5 w-5 text-orange-500" />
+                  <Download className="h-5 w-5 text-accent-foreground" />
                   <div>
                     <p className="text-sm font-semibold">Linux</p>
                     <p className="text-[11px] text-muted-foreground">.AppImage</p>
