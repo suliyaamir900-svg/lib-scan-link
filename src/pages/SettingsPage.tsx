@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Settings, Save, Loader2, Library, Building2, User, Phone, Mail, Lock,
   Armchair, BookOpen, Users, GraduationCap, X, Plus, Clock,
-  IndianRupee
+  IndianRupee, Monitor, Download, Apple, Github
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -553,6 +553,62 @@ export default function SettingsPage() {
             {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save All Settings / सब सेटिंग्स सेव करें
           </Button>
+
+          {/* Desktop App Install Card */}
+          <Card className="shadow-card border-primary/30 overflow-hidden">
+            <div className="h-1 gradient-primary" />
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Monitor className="h-5 w-5 text-primary" />
+                Install as Desktop App / डेस्कटॉप ऐप इंस्टॉल करें
+              </CardTitle>
+              <CardDescription>
+                LibScan को Windows, Mac या Linux पर real desktop app की तरह install करें — Start Menu shortcut, dedicated window, no browser tabs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+                  <Monitor className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="text-sm font-semibold">Windows</p>
+                    <p className="text-[11px] text-muted-foreground">.exe installer</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+                  <Apple className="h-5 w-5" />
+                  <div>
+                    <p className="text-sm font-semibold">macOS</p>
+                    <p className="text-[11px] text-muted-foreground">.dmg package</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+                  <Download className="h-5 w-5 text-orange-500" />
+                  <div>
+                    <p className="text-sm font-semibold">Linux</p>
+                    <p className="text-[11px] text-muted-foreground">.AppImage</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-1.5">
+                <p className="font-semibold text-foreground">📦 Quick Build (3 commands on your computer):</p>
+                <pre className="text-[11px] bg-background/60 p-2 rounded overflow-x-auto"><code>{`git clone <your-repo> && cd <your-repo>
+npm install && npm install -D electron electron-builder
+npm run electron:build:win   # ya :mac / :linux`}</code></pre>
+                <p className="pt-1">Full guide: <code className="bg-background/60 px-1.5 py-0.5 rounded">DESKTOP_INSTALL.md</code> file देखें (project root में).</p>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => window.open('https://docs.lovable.dev/integrations/git', '_blank')}
+              >
+                <Github className="h-4 w-4" />
+                Export to GitHub first / पहले GitHub पर export करें
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Footer */}
           <p className="text-center text-xs text-muted-foreground py-2">© S_Amir786 — LibScan</p>
