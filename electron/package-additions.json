@@ -1,0 +1,50 @@
+{
+  "_comment": "Reference snippets to merge into your root package.json AFTER you pull the project to your local machine. Do NOT modify package.json on Lovable directly — these are install-only steps for desktop packaging.",
+
+  "main": "electron/main.cjs",
+
+  "scripts_to_add": {
+    "electron:dev": "vite build && electron .",
+    "electron:build:win": "vite build && electron-builder --win",
+    "electron:build:mac": "vite build && electron-builder --mac",
+    "electron:build:linux": "vite build && electron-builder --linux"
+  },
+
+  "devDependencies_to_add": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+
+  "build_config_to_add": {
+    "build": {
+      "appId": "app.lovable.libscan",
+      "productName": "LibScan",
+      "directories": {
+        "output": "release"
+      },
+      "files": [
+        "dist/**/*",
+        "electron/**/*",
+        "package.json"
+      ],
+      "win": {
+        "target": ["nsis", "portable"],
+        "icon": "public/favicon.ico"
+      },
+      "mac": {
+        "target": ["dmg", "zip"],
+        "category": "public.app-category.education"
+      },
+      "linux": {
+        "target": ["AppImage", "deb"],
+        "category": "Education"
+      },
+      "nsis": {
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true,
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true
+      }
+    }
+  }
+}
