@@ -13,8 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Settings, Save, Loader2, Library, Building2, User, Phone, Mail, Lock,
-  Armchair, BookOpen, Megaphone, Users, GraduationCap, X, Plus, Clock,
-  IndianRupee, DoorOpen, Bell, Palette, Globe, Shield
+  Armchair, BookOpen, Users, GraduationCap, X, Plus, Clock,
+  IndianRupee
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -444,11 +444,6 @@ export default function SettingsPage() {
                   desc="Queue when all seats are full / जब सभी सीटें भर जाएं तो कतार"
                   checked={settingsForm.allow_queue}
                   onChange={(v: boolean) => setSettingsForm(p => ({ ...p, allow_queue: v }))} />
-
-                <ToggleRow icon={Megaphone} title="Show Announcements" titleHi="घोषणाएं दिखाएं"
-                  desc="Display active announcements on entry form / एंट्री फॉर्म पर घोषणाएं दिखाएं"
-                  checked={settingsForm.show_announcements_on_entry}
-                  onChange={(v: boolean) => setSettingsForm(p => ({ ...p, show_announcements_on_entry: v }))} />
 
                 <ToggleRow icon={BookOpen} title="Book Reservations" titleHi="किताब आरक्षण"
                   desc="Allow students to reserve books / छात्र किताबें रिज़र्व कर सकें"

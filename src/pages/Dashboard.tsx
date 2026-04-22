@@ -15,6 +15,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import LibraryTypeSetup from './LibraryTypeSetup';
 import LiveOccupancy from '@/components/dashboard/LiveOccupancy';
+import AIInsightsCard from '@/components/dashboard/AIInsightsCard';
+import PeakHoursChart from '@/components/dashboard/PeakHoursChart';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -393,6 +395,26 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Live Occupancy + AI Insights + Peak Hours */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {library && <LiveOccupancy libraryId={library.id} />}
+            <AIInsightsCard
+              stats={{
+                studentsInside,
+                teachersInside,
+                todayEntries: todayEntries.length,
+                weekEntries: entries.filter(e => e.entry_date >= weekAgo).length,
+                overdueBooks,
+                totalFines,
+                inactiveStudents: inactiveStudents.length,
+                issuedBooks: issuedBooksCount,
+                availableCopies,
+                topDept: deptData[0]?.name,
+              }}
+            />
+            <PeakHoursChart entries={entries} />
+          </div>
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
