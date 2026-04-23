@@ -84,11 +84,7 @@ export default function Landing() {
     { step: '04', title: 'Track & analyze', desc: 'Watch live data flow into your dashboard instantly.' },
   ];
 
-  const testimonials = [
-    { name: 'Dr. Priya Sharma', role: 'Head Librarian, Delhi University', text: 'Transformed our library overnight — from registers to real-time tracking.', rating: 5 },
-    { name: 'Rajesh Kumar', role: 'Admin, IIT Kanpur', text: 'QR entry saves hours every day. Students love how fast it is.', rating: 5 },
-    { name: 'Anita Verma', role: 'Librarian, Govt. College', text: 'Hindi support makes it accessible for everyone on staff.', rating: 5 },
-  ];
+  // testimonials are now fetched live from `platform_reviews` (see <ReviewsSection /> below)
 
   const advancedFeatures = [
     { icon: Sparkles, title: 'Smart search', desc: 'Find by name, enrollment, phone or roll number' },
@@ -143,7 +139,9 @@ export default function Landing() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/15 mb-7">
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Trusted by 100+ college libraries across India
+              {liveStats.loaded
+                ? `Trusted by ${liveStats.libraries} ${liveStats.libraries === 1 ? 'library' : 'libraries'} · ${liveStats.students.toLocaleString()} students managed`
+                : 'Trusted by college libraries across India'}
             </span>
           </motion.div>
           <motion.h1
