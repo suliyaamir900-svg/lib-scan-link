@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Users, CalendarDays, CalendarRange, CalendarClock, TrendingUp, GraduationCap, Briefcase,
   DoorOpen, BookOpen, AlertTriangle, Trophy, IndianRupee, FileText,
-  Download, UserX, BookCopy, Activity, RefreshCw
+  Download, UserX, BookCopy, ArrowUpRight, Plus, QrCode, Search
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
@@ -17,6 +18,8 @@ import LibraryTypeSetup from './LibraryTypeSetup';
 import LiveOccupancy from '@/components/dashboard/LiveOccupancy';
 import AIInsightsCard from '@/components/dashboard/AIInsightsCard';
 import PeakHoursChart from '@/components/dashboard/PeakHoursChart';
+import LiveActivityFeed from '@/components/dashboard/LiveActivityFeed';
+import DashboardHero from '@/components/dashboard/DashboardHero';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
