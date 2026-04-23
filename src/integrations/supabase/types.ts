@@ -857,6 +857,36 @@ export type Database = {
           },
         ]
       }
+      platform_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          is_approved: boolean
+          message: string
+          rating: number
+          reviewer_name: string
+          reviewer_role: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          message: string
+          rating: number
+          reviewer_name: string
+          reviewer_role?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          message?: string
+          rating?: number
+          reviewer_name?: string
+          reviewer_role?: string | null
+        }
+        Relationships: []
+      }
       room_bookings: {
         Row: {
           booked_by_id: string
