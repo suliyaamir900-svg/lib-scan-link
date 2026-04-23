@@ -866,6 +866,7 @@ export type Database = {
           rating: number
           reviewer_name: string
           reviewer_role: string | null
+          submitter_fingerprint: string | null
         }
         Insert: {
           created_at?: string
@@ -875,6 +876,7 @@ export type Database = {
           rating: number
           reviewer_name: string
           reviewer_role?: string | null
+          submitter_fingerprint?: string | null
         }
         Update: {
           created_at?: string
@@ -884,6 +886,7 @@ export type Database = {
           rating?: number
           reviewer_name?: string
           reviewer_role?: string | null
+          submitter_fingerprint?: string | null
         }
         Relationships: []
       }
