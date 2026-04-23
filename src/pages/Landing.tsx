@@ -6,9 +6,11 @@ import { motion, useInView } from 'framer-motion';
 import {
   QrCode, LayoutDashboard, PenTool, FileSpreadsheet, Building2, Smartphone,
   ArrowRight, BookOpen, Shield, Zap, BarChart3, Users, Clock, CheckCircle,
-  Star, Bell, Globe, Lock, Sparkles, ChevronRight
+  Star, Bell, Globe, Lock, Sparkles, ChevronRight, MessageSquarePlus
 } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
+import ReviewDialog from '@/components/landing/ReviewDialog';
+import { useLandingStats } from '@/hooks/useLandingStats';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -41,6 +43,7 @@ function AnimatedCounter({ end, suffix = '', duration = 1800 }: { end: number; s
 export default function Landing() {
   const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
+  const { stats: liveStats, reviews, refresh } = useLandingStats();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -57,11 +60,12 @@ export default function Landing() {
     { icon: Smartphone, title: 'Mobile-Ready / मोबाइल फ्रेंडली', desc: 'Works on any phone, tablet or desktop browser.' },
   ];
 
+  // REAL stats from the database (fetched live, refreshed on review insert)
   const stats = [
-    { value: 5000, suffix: '+', label: 'Students managed' },
-    { value: 100, suffix: '+', label: 'Libraries active' },
-    { value: 99.9, suffix: '%', label: 'Uptime' },
-    { value: 50000, suffix: '+', label: 'Entries logged' },
+    { value: liveStats.libraries, suffix: '', label: 'Libraries onboard' },
+    { value: liveStats.students, suffix: '', label: 'Students managed' },
+    { value: liveStats.entries, suffix: '', label: 'Entries logged' },
+    { value: liveStats.books, suffix: '', label: 'Books tracked' },
   ];
 
   const benefits = [
@@ -80,11 +84,7 @@ export default function Landing() {
     { step: '04', title: 'Track & analyze', desc: 'Watch live data flow into your dashboard instantly.' },
   ];
 
-  const testimonials = [
-    { name: 'Dr. Priya Sharma', role: 'Head Librarian, Delhi University', text: 'Transformed our library overnight — from registers to real-time tracking.', rating: 5 },
-    { name: 'Rajesh Kumar', role: 'Admin, IIT Kanpur', text: 'QR entry saves hours every day. Students love how fast it is.', rating: 5 },
-    { name: 'Anita Verma', role: 'Librarian, Govt. College', text: 'Hindi support makes it accessible for everyone on staff.', rating: 5 },
-  ];
+  // testimonials are now fetched live from `platform_reviews` (see <ReviewsSection /> below)
 
   const advancedFeatures = [
     { icon: Sparkles, title: 'Smart search', desc: 'Find by name, enrollment, phone or roll number' },
@@ -139,7 +139,9 @@ export default function Landing() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/15 mb-7">
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Trusted by 100+ college libraries across India
+              {liveStats.loaded
+                ? `Trusted by ${liveStats.libraries} ${liveStats.libraries === 1 ? 'library' : 'libraries'} · ${liveStats.students.toLocaleString()} students managed`
+                : 'Trusted by college libraries across India'}
             </span>
           </motion.div>
           <motion.h1
@@ -298,40 +300,100 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials — REAL reviews from platform_reviews */}
       <section id="testimonials" className="py-24 px-5">
         <div className="container mx-auto max-w-5xl">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-16">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-10">
             <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-4">Reviews</span>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-5">
               Loved by librarians
               <br />
               <span className="text-muted-foreground">across India.</span>
             </h2>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {testimonials.map((tm, i) => (
-              <motion.div key={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}>
-                <div className="h-full p-7 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-card-hover transition-all duration-300">
-                  <div className="flex gap-0.5 mb-4">
-                    {Array.from({ length: tm.rating }).map((_, j) => (
-                      <Star key={j} className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                    ))}
-                  </div>
-                  <p className="text-[15px] leading-relaxed mb-6 font-medium">"{tm.text}"</p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-border/50">
-                    <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
-                      {tm.name[0]}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold tracking-tight truncate">{tm.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{tm.role}</p>
-                    </div>
-                  </div>
+
+            {/* Aggregate rating + count (real numbers) */}
+            {liveStats.reviewCount > 0 && (
+              <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-full bg-card border border-border/50 shadow-card">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`h-4 w-4 ${n <= Math.round(liveStats.avgRating) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/25'}`}
+                    />
+                  ))}
                 </div>
+                <span className="text-sm font-bold tabular-nums">{liveStats.avgRating.toFixed(1)}</span>
+                <span className="text-xs text-muted-foreground">/ 5 · based on {liveStats.reviewCount} review{liveStats.reviewCount === 1 ? '' : 's'}</span>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Reviews grid */}
+          {reviews.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl border border-dashed border-border/50 bg-card/40">
+              <Star className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground mb-5">Be the first to leave a review!</p>
+              <ReviewDialog
+                onSubmitted={refresh}
+                trigger={
+                  <Button className="gradient-primary text-primary-foreground shadow-primary gap-2 rounded-xl">
+                    <MessageSquarePlus className="h-4 w-4" /> Write the first review
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {reviews.slice(0, 6).map((r, i) => (
+                  <motion.div key={r.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}>
+                    <div className="h-full p-7 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-card-hover transition-all duration-300 flex flex-col">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }).map((_, j) => (
+                            <Star
+                              key={j}
+                              className={`h-3.5 w-3.5 ${j < r.rating ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/25'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <p className="text-[15px] leading-relaxed mb-6 font-medium flex-1">"{r.message}"</p>
+                      <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                        <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
+                          {r.reviewer_name[0]?.toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold tracking-tight truncate">{r.reviewer_name}</p>
+                          {r.reviewer_role && (
+                            <p className="text-[11px] text-muted-foreground truncate">{r.reviewer_role}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Leave a review CTA */}
+              <motion.div
+                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}
+                className="text-center mt-10"
+              >
+                <ReviewDialog
+                  onSubmitted={refresh}
+                  trigger={
+                    <Button size="lg" variant="outline" className="gap-2 h-12 rounded-xl font-semibold border-border/60 hover:border-primary hover:bg-primary/5">
+                      <MessageSquarePlus className="h-4 w-4" /> Leave your review
+                    </Button>
+                  }
+                />
               </motion.div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       </section>
 
