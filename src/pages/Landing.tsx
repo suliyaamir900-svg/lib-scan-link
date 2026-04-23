@@ -6,9 +6,11 @@ import { motion, useInView } from 'framer-motion';
 import {
   QrCode, LayoutDashboard, PenTool, FileSpreadsheet, Building2, Smartphone,
   ArrowRight, BookOpen, Shield, Zap, BarChart3, Users, Clock, CheckCircle,
-  Star, Bell, Globe, Lock, Sparkles, ChevronRight
+  Star, Bell, Globe, Lock, Sparkles, ChevronRight, MessageSquarePlus
 } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
+import ReviewDialog from '@/components/landing/ReviewDialog';
+import { useLandingStats } from '@/hooks/useLandingStats';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
