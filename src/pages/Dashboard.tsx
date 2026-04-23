@@ -227,59 +227,93 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
-          {library && <p className="text-sm text-muted-foreground">{library.name} — {library.college_name}</p>}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={fetchData} className="h-8 w-8">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Badge variant="outline" className="gap-1 text-xs animate-pulse border-green-500 text-green-600">
-            <Activity className="h-3 w-3" /> Live
-          </Badge>
-        </div>
-      </div>
-
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <>
+          {/* ── PREMIUM HERO ── */}
+          <DashboardHero
+            libraryName={library?.name}
+            collegeName={library?.college_name}
+            adminName={library?.admin_name}
+            onRefresh={fetchData}
+            lastRefresh={lastRefresh}
+          />
+
+          {/* ── QUICK ACTIONS ── */}
+          <div className="flex flex-wrap items-center gap-2 mb-5">
+            <Link to={library ? `/entry/${library.id}` : '#'}>
+              <Button size="sm" className="gap-1.5 h-9 gradient-primary text-primary-foreground shadow-primary border-0 hover:opacity-90 btn-float">
+                <Plus className="h-4 w-4" /> Quick Entry
+              </Button>
+            </Link>
+            <Link to="/book-issues">
+              <Button size="sm" variant="outline" className="gap-1.5 h-9 btn-float">
+                <BookCopy className="h-4 w-4" /> Issue Book
+              </Button>
+            </Link>
+            <Link to="/search">
+              <Button size="sm" variant="outline" className="gap-1.5 h-9 btn-float">
+                <Search className="h-4 w-4" /> Smart Search
+              </Button>
+            </Link>
+            <Link to="/qr-code">
+              <Button size="sm" variant="outline" className="gap-1.5 h-9 btn-float">
+                <QrCode className="h-4 w-4" /> QR Code
+              </Button>
+            </Link>
+            <Link to="/reports" className="ml-auto">
+              <Button size="sm" variant="ghost" className="gap-1.5 h-9 text-muted-foreground hover:text-primary">
+                <FileText className="h-4 w-4" /> Reports <ArrowUpRight className="h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+
           {/* ── SMART SUMMARY ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.05 }}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3"
+          >
             {mainStats.map((s, i) => (
-              <Card key={i} className="stat-card border-border/50 overflow-hidden group">
-                <div className={`h-1 ${s.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className={`h-11 w-11 rounded-xl ${s.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                    <s.icon className="h-5 w-5 text-primary-foreground" />
+              <Card key={i} className="stat-card border-border/50 overflow-hidden group relative">
+                <div className={`absolute inset-x-0 top-0 h-0.5 ${s.gradient}`} />
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className={`h-10 w-10 rounded-xl ${s.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-primary`}>
+                      <s.icon className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{s.value}</p>
-                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                  </div>
+                  <p className="text-2xl font-bold tabular-nums tracking-tight">{s.value}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{s.label}</p>
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </motion.div>
 
           {/* Activity Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5"
+          >
             {activityStats.map((s, i) => (
               <Card key={i} className="stat-card border-border/50 overflow-hidden group">
                 <CardContent className="p-4 flex items-center gap-3">
                   <div className={`h-10 w-10 rounded-lg ${s.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                     <s.icon className="h-5 w-5 text-primary-foreground" />
                   </div>
-                  <div>
-                    <p className="text-xl font-bold">{s.value}</p>
-                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold tabular-nums">{s.value}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{s.label}</p>
                   </div>
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </motion.div>
 
           {/* Alerts Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
