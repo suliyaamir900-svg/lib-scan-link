@@ -433,9 +433,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Live Occupancy + AI Insights + Peak Hours */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Live Occupancy + Activity Feed + AI Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
             {library && <LiveOccupancy libraryId={library.id} />}
+            {library && <LiveActivityFeed libraryId={library.id} />}
             <AIInsightsCard
               stats={{
                 studentsInside,
@@ -450,6 +451,10 @@ export default function Dashboard() {
                 topDept: deptData[0]?.name,
               }}
             />
+          </div>
+
+          {/* Peak Hours full width */}
+          <div className="mb-5">
             <PeakHoursChart entries={entries} />
           </div>
 
