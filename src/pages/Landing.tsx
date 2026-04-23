@@ -43,6 +43,7 @@ function AnimatedCounter({ end, suffix = '', duration = 1800 }: { end: number; s
 export default function Landing() {
   const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
+  const { stats: liveStats, reviews, refresh } = useLandingStats();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -59,11 +60,12 @@ export default function Landing() {
     { icon: Smartphone, title: 'Mobile-Ready / मोबाइल फ्रेंडली', desc: 'Works on any phone, tablet or desktop browser.' },
   ];
 
+  // REAL stats from the database (fetched live, refreshed on review insert)
   const stats = [
-    { value: 5000, suffix: '+', label: 'Students managed' },
-    { value: 100, suffix: '+', label: 'Libraries active' },
-    { value: 99.9, suffix: '%', label: 'Uptime' },
-    { value: 50000, suffix: '+', label: 'Entries logged' },
+    { value: liveStats.libraries, suffix: '', label: 'Libraries onboard' },
+    { value: liveStats.students, suffix: '', label: 'Students managed' },
+    { value: liveStats.entries, suffix: '', label: 'Entries logged' },
+    { value: liveStats.books, suffix: '', label: 'Books tracked' },
   ];
 
   const benefits = [
