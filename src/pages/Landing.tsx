@@ -300,40 +300,100 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials — REAL reviews from platform_reviews */}
       <section id="testimonials" className="py-24 px-5">
         <div className="container mx-auto max-w-5xl">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-16">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-10">
             <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-4">Reviews</span>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-5">
               Loved by librarians
               <br />
               <span className="text-muted-foreground">across India.</span>
             </h2>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {testimonials.map((tm, i) => (
-              <motion.div key={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}>
-                <div className="h-full p-7 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-card-hover transition-all duration-300">
-                  <div className="flex gap-0.5 mb-4">
-                    {Array.from({ length: tm.rating }).map((_, j) => (
-                      <Star key={j} className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                    ))}
-                  </div>
-                  <p className="text-[15px] leading-relaxed mb-6 font-medium">"{tm.text}"</p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-border/50">
-                    <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
-                      {tm.name[0]}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold tracking-tight truncate">{tm.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{tm.role}</p>
-                    </div>
-                  </div>
+
+            {/* Aggregate rating + count (real numbers) */}
+            {liveStats.reviewCount > 0 && (
+              <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-full bg-card border border-border/50 shadow-card">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`h-4 w-4 ${n <= Math.round(liveStats.avgRating) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/25'}`}
+                    />
+                  ))}
                 </div>
+                <span className="text-sm font-bold tabular-nums">{liveStats.avgRating.toFixed(1)}</span>
+                <span className="text-xs text-muted-foreground">/ 5 · based on {liveStats.reviewCount} review{liveStats.reviewCount === 1 ? '' : 's'}</span>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Reviews grid */}
+          {reviews.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl border border-dashed border-border/50 bg-card/40">
+              <Star className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground mb-5">Be the first to leave a review!</p>
+              <ReviewDialog
+                onSubmitted={refresh}
+                trigger={
+                  <Button className="gradient-primary text-primary-foreground shadow-primary gap-2 rounded-xl">
+                    <MessageSquarePlus className="h-4 w-4" /> Write the first review
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {reviews.slice(0, 6).map((r, i) => (
+                  <motion.div key={r.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}>
+                    <div className="h-full p-7 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-card-hover transition-all duration-300 flex flex-col">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }).map((_, j) => (
+                            <Star
+                              key={j}
+                              className={`h-3.5 w-3.5 ${j < r.rating ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/25'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <p className="text-[15px] leading-relaxed mb-6 font-medium flex-1">"{r.message}"</p>
+                      <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                        <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
+                          {r.reviewer_name[0]?.toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold tracking-tight truncate">{r.reviewer_name}</p>
+                          {r.reviewer_role && (
+                            <p className="text-[11px] text-muted-foreground truncate">{r.reviewer_role}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Leave a review CTA */}
+              <motion.div
+                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}
+                className="text-center mt-10"
+              >
+                <ReviewDialog
+                  onSubmitted={refresh}
+                  trigger={
+                    <Button size="lg" variant="outline" className="gap-2 h-12 rounded-xl font-semibold border-border/60 hover:border-primary hover:bg-primary/5">
+                      <MessageSquarePlus className="h-4 w-4" /> Leave your review
+                    </Button>
+                  }
+                />
               </motion.div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       </section>
 
