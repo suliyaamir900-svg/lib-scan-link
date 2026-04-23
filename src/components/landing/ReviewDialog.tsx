@@ -1,17 +1,45 @@
 import { useState } from 'react';
+import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Star, Send, Loader2 } from 'lucide-react';
+import { Star, Send, Loader2, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getDeviceFingerprint } from '@/lib/fingerprint';
 
 interface Props {
   trigger: React.ReactNode;
   onSubmitted?: () => void;
 }
+
+// Strict client-side schema — server enforces the same rules.
+const reviewSchema = z.object({
+  reviewer_name: z
+    .string()
+    .trim()
+    .min(2, 'Name must be at least 2 characters')
+    .max(80, 'Name must be under 80 characters')
+    .regex(/^[\p{L}\p{M}\s.\-']+$/u, 'Name contains invalid characters'),
+  reviewer_role: z
+    .string()
+    .trim()
+    .max(80, 'Role must be under 80 characters')
+    .optional()
+    .or(z.literal('')),
+  rating: z.number().int().min(1).max(5),
+  message: z
+    .string()
+    .trim()
+    .min(10, 'Review must be at least 10 characters')
+    .max(400, 'Review must be under 400 characters')
+    .refine(
+      (v) => !/(https?:\/\/|www\.|<script|<\/script|javascript:)/i.test(v),
+      { message: 'Links and scripts are not allowed' },
+    ),
+});
 
 export default function ReviewDialog({ trigger, onSubmitted }: Props) {
   const [open, setOpen] = useState(false);
@@ -24,22 +52,47 @@ export default function ReviewDialog({ trigger, onSubmitted }: Props) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !message.trim()) {
-      toast.error('Please fill in your name and review');
+
+    const parsed = reviewSchema.safeParse({
+      reviewer_name: name,
+      reviewer_role: role,
+      rating,
+      message,
+    });
+
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Please check your inputs');
       return;
     }
+
     setSubmitting(true);
+    const fp = getDeviceFingerprint();
+
     const { error } = await (supabase as any).from('platform_reviews').insert({
-      reviewer_name: name.trim(),
-      reviewer_role: role.trim(),
-      rating,
-      message: message.trim(),
+      reviewer_name: parsed.data.reviewer_name,
+      reviewer_role: parsed.data.reviewer_role || null,
+      rating: parsed.data.rating,
+      message: parsed.data.message,
+      submitter_fingerprint: fp,
     });
     setSubmitting(false);
+
     if (error) {
-      toast.error(error.message || 'Failed to submit review');
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('already submitted')) {
+        toast.error('You\'ve already submitted a review in the last 24 hours.');
+      } else if (msg.includes('similar review')) {
+        toast.error('A very similar review was just submitted.');
+      } else if (msg.includes('links and scripts')) {
+        toast.error('Links and scripts are not allowed in your review.');
+      } else if (msg.includes('check constraint')) {
+        toast.error('Review does not meet the length requirements.');
+      } else {
+        toast.error(error.message || 'Failed to submit review');
+      }
       return;
     }
+
     toast.success('🎉 Thank you! Your review is live.');
     setName(''); setRole(''); setMessage(''); setRating(5);
     setOpen(false);
@@ -95,6 +148,7 @@ export default function ReviewDialog({ trigger, onSubmitted }: Props) {
                 placeholder="Your full name"
                 className="mt-1"
                 required
+                minLength={2}
                 maxLength={80}
               />
             </div>
@@ -120,9 +174,15 @@ export default function ReviewDialog({ trigger, onSubmitted }: Props) {
               placeholder="Tell us what you love about LibScan…"
               className="mt-1 min-h-[100px] resize-none"
               required
+              minLength={10}
               maxLength={400}
             />
-            <p className="text-[10px] text-muted-foreground text-right mt-1">{message.length}/400</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" /> Spam-protected · Links not allowed
+              </p>
+              <p className="text-[10px] text-muted-foreground">{message.length}/400</p>
+            </div>
           </div>
 
           <Button
